@@ -3,21 +3,21 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-bold text-slate-900">System Configuration & Document Numbering</h2>
+        <h2 class="page-title">System Configuration & Document Numbering</h2>
       </div>
       <button
-        @click="saved = true"
-        class="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm"
+        @click="handleSave"
+        class="primary-button"
       >
         {{ saved ? '✓ Settings Saved' : 'Save Changes' }}
       </button>
     </div>
 
     <!-- Company Information -->
-    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4 text-xs">
+    <div class="section-card p-6 space-y-4 text-xs">
       <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Company Legal Profile</h3>
       
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block font-medium text-slate-700 mb-1">Company Trading Name</label>
           <input v-model="company.name" class="w-full px-3 py-2 border rounded-md border-slate-300 font-bold" />
@@ -33,7 +33,7 @@
         <input v-model="company.address" class="w-full px-3 py-2 border rounded-md border-slate-300" />
       </div>
 
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block font-medium text-slate-700 mb-1">Telephone</label>
           <input v-model="company.phone" class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" />
@@ -50,15 +50,15 @@
     </div>
 
     <!-- Document Sequencing -->
-    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4 text-xs">
+    <div class="section-card p-6 space-y-4 text-xs">
       <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Sequential Document Numbering</h3>
       
-      <div class="grid grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
           <label class="block font-bold text-slate-800">Next Delivery Receipt (DR) Number</label>
           <div class="flex items-center gap-2">
             <span class="font-mono text-slate-500 font-bold">DR #</span>
-            <input v-model.number="deliveryStore.nextDrSeq" type="number" class="w-32 px-3 py-1.5 border rounded-md border-slate-300 font-mono font-bold text-base text-slate-950" />
+            <input v-model.number="deliverySequence" type="number" min="1" class="w-32 px-3 py-1.5 border rounded-md border-slate-300 font-mono font-bold text-base text-slate-950" />
           </div>
           <p class="text-[11px] text-slate-500">Auto-increments upon saving a verified delivery</p>
         </div>
@@ -66,8 +66,8 @@
         <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
           <label class="block font-bold text-slate-800">Next Statement of Account (SOA) Sequence</label>
           <div class="flex items-center gap-2">
-            <span class="font-mono text-slate-500 font-bold">SOA-2026-</span>
-            <input v-model.number="billingStore.nextSoaSeq" type="number" class="w-32 px-3 py-1.5 border rounded-md border-slate-300 font-mono font-bold text-base text-slate-950" />
+            <span class="font-mono text-slate-500 font-bold">SOA-{{ currentYear }}-</span>
+            <input v-model.number="soaSequence" type="number" min="1" class="w-32 px-3 py-1.5 border rounded-md border-slate-300 font-mono font-bold text-base text-slate-950" />
           </div>
           <p class="text-[11px] text-slate-500">Generated sequentially per billable delivery</p>
         </div>
@@ -75,10 +75,10 @@
     </div>
 
     <!-- Bank Details -->
-    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4 text-xs">
+    <div class="section-card p-6 space-y-4 text-xs">
       <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Remittance Bank Account (For SOA Printouts)</h3>
       
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block font-medium text-slate-700 mb-1">Bank Name</label>
           <input v-model="company.bankName" class="w-full px-3 py-2 border rounded-md border-slate-300" />
@@ -100,22 +100,28 @@
 import { ref } from 'vue'
 import { useDeliveryStore } from '@/stores/deliveryStore'
 import { useBillingStore } from '@/stores/billingStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const deliveryStore = useDeliveryStore()
 const billingStore = useBillingStore()
+const settingsStore = useSettingsStore()
 
 const saved = ref(false)
+const currentYear = new Date().getFullYear()
+const deliverySequence = ref(deliveryStore.nextDrSeq)
+const soaSequence = ref(billingStore.nextSoaSeq)
 
-const company = ref({
-  name: 'CCR Construction Supply',
-  tin: '142-990-811-000 NV',
-  address: 'Poblacion, Barili, Cebu',
-  phone: '0995 743 7989 / 0998 558 0067',
-  email: 'accounting@ccrsupply.ph',
-  defaultTerms: '30 days upon delivery on site',
-  bankName: 'Metrobank',
-  bankAccountName: 'Rodil B. Vergara',
-  bankAccountNumber: '599-3-599-14522-3'
-})
+const company = ref({ ...settingsStore.company })
+
+function handleSave() {
+  deliverySequence.value = Math.max(1, Number(deliverySequence.value) || 1)
+  soaSequence.value = Math.max(1, Number(soaSequence.value) || 1)
+  deliveryStore.nextDrSeq = deliverySequence.value
+  billingStore.nextSoaSeq = soaSequence.value
+  settingsStore.updateCompany(company.value)
+  saved.value = true
+  window.setTimeout(() => {
+    saved.value = false
+  }, 2000)
+}
 </script>
-

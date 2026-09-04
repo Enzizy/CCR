@@ -3,11 +3,13 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Purchase Orders & Fulfillment</h2>
+        <h2 class="page-title">Purchase Orders & Fulfillment</h2>
       </div>
       <button
-        @click="showCreatePoModal = true"
-        class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white bg-brand-700 hover:bg-brand-800 rounded-lg shadow-xs transition-colors"
+        @click="openCreatePoModal"
+        :disabled="!canCreatePo"
+        :title="canCreatePo ? 'Create purchase order' : 'Add a customer and product first'"
+        class="primary-button"
       >
         <Plus class="w-4 h-4" />
         <span>New Purchase Order</span>
@@ -16,6 +18,10 @@
 
     <!-- PO List Cards -->
     <div class="space-y-6">
+      <div v-if="salesStore.enrichedPurchaseOrders.length === 0" class="section-card empty-state">
+        <h3>No purchase orders yet</h3>
+        <p>Purchase orders will appear here after the required customer and product records are ready.</p>
+      </div>
       <div
         v-for="po in salesStore.enrichedPurchaseOrders"
         :key="po.id"
@@ -86,9 +92,9 @@
 
         <!-- Line Items Table -->
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs border-collapse">
+          <table class="data-table">
             <thead>
-              <tr class="bg-slate-50/40 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+              <tr class="data-table-header">
                 <th class="py-3 px-6">Product Description</th>
                 <th class="py-3 px-4 text-right">Unit Price</th>
                 <th class="py-3 px-4 text-right">Ordered</th>
@@ -116,6 +122,7 @@
     </div>
 
     <!-- Create Delivery Modal (Integrated PO Fulfillment) -->
+    <Teleport to="body">
     <div v-if="showDeliveryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-200">
@@ -144,8 +151,8 @@
           <div>
             <label class="block font-bold text-slate-800 mb-2">Quantities Being Shipped (Auto-calculated remaining quantities shown)</label>
             <div class="border border-slate-200 rounded-lg overflow-hidden">
-              <table class="w-full text-left text-xs">
-                <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+              <table class="data-table">
+                <thead class="data-table-header">
                   <tr>
                     <th class="p-2.5">Product</th>
                     <th class="p-2.5 text-right">Ordered</th>
@@ -192,8 +199,10 @@
         </form>
       </div>
     </div>
+    </Teleport>
 
     <!-- Create PO Modal -->
+    <Teleport to="body">
     <div v-if="showCreatePoModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -208,6 +217,7 @@
             <div>
               <label class="block font-medium text-slate-700 mb-1">Customer *</label>
               <select v-model="newPo.customerId" required class="w-full px-3 py-2 border rounded-md border-slate-300" @change="onCustomerSelect">
+                <option disabled value="">Select a customer</option>
                 <option v-for="c in salesStore.customers" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
             </div>
@@ -241,7 +251,8 @@
             </div>
             <div class="space-y-2">
               <div v-for="(line, idx) in newPo.items" :key="idx" class="flex gap-2 items-center">
-                <select v-model="line.productId" @change="onProductSelect(line)" class="flex-1 px-2 py-1.5 border rounded border-slate-300">
+                <select v-model="line.productId" required @change="onProductSelect(line)" class="flex-1 px-2 py-1.5 border rounded border-slate-300">
+                  <option disabled value="">Select a product</option>
                   <option v-for="p in salesStore.products" :key="p.id" :value="p.id">{{ p.name }}</option>
                 </select>
                 <input v-model.number="line.orderedQty" type="number" min="1" placeholder="Qty" class="w-20 px-2 py-1.5 border rounded border-slate-300 text-right font-mono" />
@@ -257,6 +268,7 @@
         </form>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
@@ -275,7 +287,7 @@ const showDeliveryModal = ref(false)
 const selectedPo = ref(null)
 const deliveryForm = ref({
   date: new Date().toISOString().split('T')[0],
-  deliveredBy: 'Pedro Cruz (Driver)',
+  deliveredBy: '',
   receivedBy: '',
   items: []
 })
@@ -284,8 +296,8 @@ function openDeliveryModal(po) {
   selectedPo.value = po
   deliveryForm.value = {
     date: new Date().toISOString().split('T')[0],
-    deliveredBy: 'Pedro Cruz (Driver)',
-    receivedBy: po.customerName + ' Site Engineer',
+    deliveredBy: '',
+    receivedBy: '',
     items: po.items.map(item => ({
       productId: item.productId,
       name: item.productName,
@@ -308,7 +320,7 @@ function handleCreateDelivery() {
   if (!selectedPo.value) return
 
   // Filter items with quantity > 0
-  const validItems = deliveryForm.value.items.filter(i => Number(i.quantity) > 0)
+  const validItems = deliveryForm.value.items.filter(i => Number(i.quantity) > 0 && Number(i.quantity) <= i.remainingQty)
   if (validItems.length === 0) {
     alert('Please enter at least one quantity to deliver.')
     return
@@ -318,9 +330,11 @@ function handleCreateDelivery() {
     date: deliveryForm.value.date,
     poId: selectedPo.value.id,
     poNumber: selectedPo.value.poNumber,
+    poDate: selectedPo.value.date,
     customerId: selectedPo.value.customerId,
     customerName: selectedPo.value.customerName,
     project: selectedPo.value.project,
+    paymentTerms: selectedPo.value.paymentTerms,
     deliveredBy: deliveryForm.value.deliveredBy,
     receivedBy: deliveryForm.value.receivedBy,
     items: validItems
@@ -331,15 +345,16 @@ function handleCreateDelivery() {
 
 // Create PO Modal State
 const showCreatePoModal = ref(false)
+const canCreatePo = computed(() => salesStore.customers.length > 0 && salesStore.products.length > 0)
 const newPo = ref({
-  customerId: 'cust-1',
-  customerName: 'Cebu Landmaster Inc.',
+  customerId: '',
+  customerName: '',
   poNumber: '',
   date: new Date().toISOString().split('T')[0],
   paymentTerms: '30 Days upon delivery',
   project: '',
   items: [
-    { productId: 'prod-1', productName: 'Door, Wooden Solid Panel 0.90x2.10 m. w/ Jamb Door', orderedQty: 50, unitPrice: 6800, unit: 'set' }
+    { productId: '', productName: '', orderedQty: 1, unitPrice: 0, unit: 'set' }
   ]
 })
 
@@ -351,12 +366,17 @@ function onCustomerSelect() {
   }
 }
 
+function openCreatePoModal() {
+  if (!canCreatePo.value) return
+  showCreatePoModal.value = true
+}
+
 function addLineItem() {
   newPo.value.items.push({
-    productId: 'prod-2',
-    productName: 'Hollow Core Flush 0.70 x 2.10 m. w/ Jamb',
-    orderedQty: 50,
-    unitPrice: 3500,
+    productId: '',
+    productName: '',
+    orderedQty: 1,
+    unitPrice: 0,
     unit: 'set'
   })
 }
@@ -371,9 +391,12 @@ function onProductSelect(line) {
 }
 
 function handleCreatePo() {
+  const validItems = newPo.value.items.filter(item => item.productId && Number(item.orderedQty) > 0)
+  if (!newPo.value.customerId || validItems.length === 0) return
+
   salesStore.addPurchaseOrder({
     ...newPo.value,
-    items: newPo.value.items.map(i => ({
+    items: validItems.map(i => ({
       ...i,
       deliveredQty: 0
     }))
@@ -381,16 +404,15 @@ function handleCreatePo() {
 
   showCreatePoModal.value = false
   newPo.value = {
-    customerId: 'cust-1',
-    customerName: 'Cebu Landmaster Inc.',
+    customerId: '',
+    customerName: '',
     poNumber: '',
     date: new Date().toISOString().split('T')[0],
     paymentTerms: '30 Days upon delivery',
     project: '',
     items: [
-      { productId: 'prod-1', productName: 'Door, Wooden Solid Panel 0.90x2.10 m. w/ Jamb Door', orderedQty: 50, unitPrice: 6800, unit: 'set' }
+      { productId: '', productName: '', orderedQty: 1, unitPrice: 0, unit: 'set' }
     ]
   }
 }
 </script>
-

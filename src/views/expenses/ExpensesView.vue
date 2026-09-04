@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Centralized Business Expenses</h2>
+        <h2 class="page-title">Centralized Business Expenses</h2>
       </div>
 
       <button
@@ -58,9 +58,9 @@
 
     <!-- Expense Table -->
     <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
-      <table class="w-full text-left text-xs border-collapse">
+      <table class="data-table">
         <thead>
-          <tr class="bg-slate-50/60 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+          <tr class="data-table-header">
             <th class="py-3 px-5 w-28">Date</th>
             <th class="py-3 px-4 w-36">Category</th>
             <th class="py-3 px-4">Description</th>
@@ -112,13 +112,16 @@
               ₱{{ e.amount.toLocaleString() }}
             </td>
           </tr>
+          <tr v-if="filteredExpenses.length === 0">
+            <td colspan="6" class="py-12 text-center text-xs text-slate-500">No expenses match this view.</td>
+          </tr>
         </tbody>
         <tfoot>
           <tr class="bg-slate-50/60 font-medium border-t border-slate-200">
             <td colspan="5" class="py-3 px-5 text-slate-500 uppercase tracking-wider text-[11px]">
               Total Displayed Expenses
             </td>
-            <td class="py-3 px-5 text-right font-mono font-semibold text-slate-900 text-sm">
+            <td class="py-3 px-5 text-right font-mono font-semibold text-slate-900">
               ₱{{ totalFilteredExpenses.toLocaleString() }}
             </td>
           </tr>
@@ -127,6 +130,7 @@
     </div>
 
     <!-- Fast Log Expense Modal -->
+    <Teleport to="body">
     <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -200,6 +204,7 @@
         </form>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
@@ -250,4 +255,3 @@ function handleAddExpense() {
   }
 }
 </script>
-

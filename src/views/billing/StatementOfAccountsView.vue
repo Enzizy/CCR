@@ -3,15 +3,15 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Statements of Account (SOA)</h2>
+        <h2 class="page-title">Statements of Account (SOA)</h2>
       </div>
     </div>
 
     <!-- SOA Table -->
     <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
-      <table class="w-full text-left text-xs border-collapse">
+      <table class="data-table">
         <thead>
-          <tr class="bg-slate-50/60 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+          <tr class="data-table-header">
             <th class="py-3 px-5 w-28">SOA Number</th>
             <th class="py-3 px-4 w-28">Billing Date</th>
             <th class="py-3 px-4 w-28">Due Date</th>
@@ -68,11 +68,15 @@
               </button>
             </td>
           </tr>
+          <tr v-if="billingStore.enrichedStatements.length === 0">
+            <td colspan="10" class="py-12 text-center text-xs text-slate-500">No statements yet. An SOA is generated automatically from each billable delivery.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Print Modal Container -->
+    <Teleport to="body">
     <div v-if="previewingSoa" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 p-4 md:p-8 backdrop-blur-xs flex flex-col items-center">
       <div class="no-print w-full max-w-4xl mb-4 bg-white p-3 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
         <button
@@ -99,8 +103,10 @@
         />
       </div>
     </div>
+    </Teleport>
 
     <!-- Record Payment Modal -->
+    <Teleport to="body">
     <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -158,6 +164,7 @@
         </form>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
@@ -216,8 +223,7 @@ function openPaymentModal(soa) {
 }
 
 function handleRecordPayment() {
-  billingStore.recordPayment(paymentForm.value)
-  showPaymentModal.value = false
+  const payment = billingStore.recordPayment(paymentForm.value)
+  if (payment) showPaymentModal.value = false
 }
 </script>
-

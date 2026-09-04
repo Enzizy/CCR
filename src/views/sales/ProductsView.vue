@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Products & Catalog</h2>
+        <h2 class="page-title">Products & Catalog</h2>
       </div>
       <button
         @click="showAddModal = true"
@@ -16,9 +16,9 @@
 
     <!-- Products Table -->
     <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
-      <table class="w-full text-left text-xs border-collapse">
+      <table class="data-table">
         <thead>
-          <tr class="bg-slate-50/60 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+          <tr class="data-table-header">
             <th class="py-3 px-5 w-32">SKU Code</th>
             <th class="py-3 px-4">Item Name & Specification</th>
             <th class="py-3 px-4 w-24 text-center">Unit</th>
@@ -41,11 +41,15 @@
               </span>
             </td>
           </tr>
+          <tr v-if="salesStore.products.length === 0">
+            <td colspan="5" class="py-12 text-center text-xs text-slate-500">No products yet. Add the first product to build your catalog.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Add Product Modal -->
+    <Teleport to="body">
     <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -72,7 +76,7 @@
           </div>
           <div>
             <label class="block font-medium text-slate-700 mb-1">Standard Reference Price (PHP) *</label>
-            <input v-model.number="newProd.defaultPrice" type="number" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" placeholder="6800" />
+            <input v-model.number="newProd.defaultPrice" type="number" min="0" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" placeholder="6800" />
           </div>
           <div>
             <label class="block font-medium text-slate-700 mb-1">Detailed Technical Specifications</label>
@@ -86,6 +90,7 @@
         </form>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
@@ -117,4 +122,3 @@ function handleAddProduct() {
   }
 }
 </script>
-

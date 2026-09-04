@@ -1,200 +1,181 @@
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Payroll Payouts & Cash Advances</h2>
-      </div>
-
-      <button
-        @click="showAdvanceModal = true"
-        class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white bg-brand-700 hover:bg-brand-800 rounded-lg shadow-xs transition-colors"
-      >
-        <Plus class="w-4 h-4" />
-        <span>Issue Cash Advance</span>
-      </button>
-    </div>
-
-    <!-- Rule Callout -->
-    <div class="p-4 bg-sky-50/60 border border-sky-200/70 rounded-xl flex items-start gap-3">
-      <AlertCircle class="w-4 h-4 text-sky-700 mt-0.5 shrink-0" />
-      <div class="text-xs">
-        <span class="font-medium text-sky-950">Accounting Integrity Rule:</span>
-        <p class="text-slate-600 mt-0.5 font-normal">
-          Cash advances are tracked as an employee receivable, not an immediate business expense. When salary is paid with a cash advance deduction, the system records the true labor cost in the central expenses while settling the advance receivable cleanly.
-        </p>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="page-title">Payroll & Cash Advances</h2>
+      <div class="flex items-center gap-2">
+        <button type="button" class="secondary-button" :disabled="!activeEmployees.length" @click="openPayrollModal">
+          <Banknote class="h-4 w-4" /> Record Payroll
+        </button>
+        <button type="button" class="primary-button" :disabled="!activeEmployees.length" @click="openAdvanceModal">
+          <Plus class="h-4 w-4" /> Issue Cash Advance
+        </button>
       </div>
     </div>
 
-    <!-- Dual Sections: Active Cash Advances & Recent Payroll Runs -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Cash Advances Ledger -->
-      <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-semibold text-slate-900">Employee Cash Advance Ledger</h3>
-          </div>
-          <div class="text-[11px] font-mono font-medium text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/70">
-            Total Open: ₱{{ employeeStore.totalOpenAdvances.toLocaleString() }}
-          </div>
+    <div v-if="!activeEmployees.length" class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+      <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
+      <p>Add an active employee before recording payroll or issuing a cash advance. <router-link to="/employees" class="font-semibold underline">Go to Employees & Workers</router-link>.</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <section class="section-card overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <h3 class="text-sm font-semibold text-slate-900">Cash Advance Ledger</h3>
+          <span class="text-xs text-slate-500">Open balance: <strong class="font-mono text-amber-700">{{ formatCurrency(employeeStore.totalOpenAdvances) }}</strong></span>
         </div>
 
-        <table class="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr class="bg-slate-50/60 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
-              <th class="py-2.5 px-5">Date</th>
-              <th class="py-2.5 px-4">Employee</th>
-              <th class="py-2.5 px-4 text-right">Advanced</th>
-              <th class="py-2.5 px-4 text-right">Deducted</th>
-              <th class="py-2.5 px-4 text-right">Remaining</th>
-              <th class="py-2.5 px-5 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 text-slate-700">
-            <tr v-for="ca in employeeStore.cashAdvances" :key="ca.id" class="hover:bg-slate-50/50 transition-colors">
-              <td class="py-3 px-5 font-mono text-slate-500">{{ ca.date }}</td>
-              <td class="py-3 px-4">
-                <div class="font-medium text-slate-900">{{ ca.employeeName }}</div>
-                <div class="text-[11px] text-slate-400">{{ ca.reason }}</div>
-              </td>
-              <td class="py-3 px-4 text-right font-mono text-slate-700">₱{{ ca.amount.toLocaleString() }}</td>
-              <td class="py-3 px-4 text-right font-mono text-emerald-700 font-medium">₱{{ ca.deductedAmount.toLocaleString() }}</td>
-              <td class="py-3 px-4 text-right font-mono font-medium" :class="ca.balance > 0 ? 'text-amber-800' : 'text-slate-400'">
-                ₱{{ ca.balance.toLocaleString() }}
-              </td>
-              <td class="py-3 px-5 text-center">
-                <StatusBadge :status="ca.status" />
-              </td>
+        <table v-if="employeeStore.cashAdvances.length" class="data-table">
+          <thead><tr class="data-table-header"><th class="px-5">Date</th><th class="px-4">Employee</th><th class="px-4 text-right">Advanced</th><th class="px-4 text-right">Deducted</th><th class="px-4 text-right">Remaining</th><th class="px-5 text-center">Status</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="advance in employeeStore.cashAdvances" :key="advance.id">
+              <td class="px-5 font-mono text-slate-500">{{ advance.date }}</td>
+              <td class="px-4"><div class="font-medium text-slate-900">{{ advance.employeeName }}</div><div class="mt-0.5 text-[11px] text-slate-400">{{ advance.reason }}</div></td>
+              <td class="px-4 text-right font-mono">{{ formatCurrency(advance.amount) }}</td>
+              <td class="px-4 text-right font-mono text-brand-700">{{ formatCurrency(advance.deductedAmount) }}</td>
+              <td class="px-4 text-right font-mono font-semibold" :class="advance.balance > 0 ? 'text-amber-700' : 'text-slate-400'">{{ formatCurrency(advance.balance) }}</td>
+              <td class="px-5 text-center"><StatusBadge :status="advance.status" /></td>
             </tr>
           </tbody>
         </table>
-      </div>
+        <div v-else class="empty-state min-h-56"><WalletCards class="h-5 w-5 text-brand-700" /><h3>No cash advances recorded</h3><p>Employee advances and payroll deductions will appear here.</p></div>
+      </section>
 
-      <!-- Historical Payroll Payouts -->
-      <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-bold text-slate-900">Recent Payroll Cutoffs</h3>
-          </div>
+      <section class="section-card overflow-hidden">
+        <div class="border-b border-slate-200 px-5 py-4"><h3 class="text-sm font-semibold text-slate-900">Payroll History</h3></div>
+        <div v-if="employeeStore.payrollRecords.length" class="divide-y divide-slate-100">
+          <article v-for="run in employeeStore.payrollRecords" :key="run.id" class="p-5 text-xs">
+            <div class="flex items-start justify-between gap-4">
+              <div><p class="font-mono font-semibold text-slate-900">{{ run.payrollRef }}</p><p class="mt-1 text-slate-500">{{ run.cutoffPeriod }} · Paid {{ run.paymentDate }}</p></div>
+              <StatusBadge :status="run.status" />
+            </div>
+            <dl class="mt-4 grid grid-cols-3 divide-x divide-slate-200 border-y border-slate-200 py-3 text-center">
+              <div><dt class="text-[10px] uppercase tracking-wide text-slate-500">Gross earned</dt><dd class="mt-1 font-mono font-semibold text-slate-900">{{ formatCurrency(run.totalGross) }}</dd></div>
+              <div><dt class="text-[10px] uppercase tracking-wide text-slate-500">Advance deducted</dt><dd class="mt-1 font-mono font-semibold text-brand-700">{{ formatCurrency(run.totalAdvanceDeductions) }}</dd></div>
+              <div><dt class="text-[10px] uppercase tracking-wide text-slate-500">Net paid</dt><dd class="mt-1 font-mono font-semibold text-slate-900">{{ formatCurrency(run.totalNetPaid) }}</dd></div>
+            </dl>
+          </article>
         </div>
-
-        <div class="p-4 space-y-4">
-          <div
-            v-for="run in employeeStore.payrollRecords"
-            :key="run.id"
-            class="p-4 border border-slate-200 rounded-lg bg-slate-50/50 space-y-3 text-xs"
-          >
-            <div class="flex items-center justify-between pb-2 border-b border-slate-200">
-              <div>
-                <span class="font-mono font-bold text-slate-900">{{ run.payrollRef }}</span>
-                <span class="ml-2 font-semibold text-slate-700">{{ run.cutoffPeriod }}</span>
-              </div>
-              <span class="font-mono text-slate-500">Paid: {{ run.paymentDate }}</span>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 text-center">
-              <div class="p-2 bg-white rounded border border-slate-200">
-                <div class="text-[10px] text-slate-500 uppercase font-semibold">Gross Earned</div>
-                <div class="font-mono font-bold text-slate-900 text-sm mt-0.5">₱{{ run.totalGross.toLocaleString() }}</div>
-              </div>
-              <div class="p-2 bg-white rounded border border-slate-200">
-                <div class="text-[10px] text-slate-500 uppercase font-semibold">Advance Deducted</div>
-                <div class="font-mono font-bold text-emerald-700 text-sm mt-0.5">- ₱{{ run.totalAdvanceDeductions.toLocaleString() }}</div>
-              </div>
-              <div class="p-2 bg-white rounded border border-slate-200">
-                <div class="text-[10px] text-slate-500 uppercase font-semibold">Net Cash Disbursed</div>
-                <div class="font-mono font-bold text-brand-800 text-sm mt-0.5">₱{{ run.totalNetPaid.toLocaleString() }}</div>
-              </div>
-            </div>
-
-            <div class="space-y-1 pt-1">
-              <div
-                v-for="(e, idx) in run.entries"
-                :key="idx"
-                class="flex items-center justify-between text-[11px] text-slate-600"
-              >
-                <span>{{ e.employeeName }}</span>
-                <span class="font-mono">Gross: ₱{{ e.grossSalary.toLocaleString() }} | Net: ₱{{ e.netPaid.toLocaleString() }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        <div v-else class="empty-state min-h-56"><Banknote class="h-5 w-5 text-brand-700" /><h3>No payroll records yet</h3><p>Recorded payroll creates the corresponding labor expense automatically.</p></div>
+      </section>
     </div>
 
-    <!-- Issue Cash Advance Modal -->
-    <div v-if="showAdvanceModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-6 text-xs space-y-4">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-200">
-          <h3 class="text-sm font-bold text-slate-900">Issue Employee Cash Advance</h3>
-          <button @click="showAdvanceModal = false" class="text-slate-400 hover:text-slate-700">
-            <X class="w-4 h-4" />
-          </button>
+    <Teleport to="body">
+      <div v-if="showAdvanceModal" class="modal-backdrop">
+        <div class="modal-panel max-w-md" role="dialog" aria-modal="true" aria-labelledby="advance-title">
+          <div class="modal-header"><h3 id="advance-title">Issue Cash Advance</h3><button type="button" class="icon-button" aria-label="Close" @click="showAdvanceModal = false"><X class="h-4 w-4" /></button></div>
+          <form class="space-y-4 p-6" @submit.prevent="handleIssueAdvance">
+            <div><label class="form-label" for="advance-employee">Employee *</label><select id="advance-employee" v-model="newAdvance.employeeId" class="form-control" required><option v-for="employee in activeEmployees" :key="employee.id" :value="employee.id">{{ employee.name }} — {{ employee.position }}</option></select></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="form-label" for="advance-date">Date *</label><input id="advance-date" v-model="newAdvance.date" class="form-control" type="date" required></div>
+              <div><label class="form-label" for="advance-amount">Amount (PHP) *</label><input id="advance-amount" v-model.number="newAdvance.amount" class="form-control font-mono" type="number" min="1" step="0.01" required></div>
+            </div>
+            <div><label class="form-label" for="advance-reason">Reason or notes *</label><textarea id="advance-reason" v-model.trim="newAdvance.reason" class="form-control" rows="2" required></textarea></div>
+            <div class="modal-actions"><button type="button" class="secondary-button" @click="showAdvanceModal = false">Cancel</button><button type="submit" class="primary-button">Issue Advance</button></div>
+          </form>
         </div>
-
-        <form @submit.prevent="handleIssueAdvance" class="space-y-3">
-          <div>
-            <label class="block font-medium text-slate-700 mb-1">Employee *</label>
-            <select v-model="newAdvance.employeeId" required class="w-full px-3 py-2 border rounded-md border-slate-300">
-              <option v-for="emp in employeeStore.employees" :key="emp.id" :value="emp.id">
-                {{ emp.name }} ({{ emp.position }})
-              </option>
-            </select>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">Date *</label>
-              <input v-model="newAdvance.date" type="date" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" />
-            </div>
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">Advance Amount (PHP) *</label>
-              <input v-model.number="newAdvance.amount" type="number" min="100" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono font-bold text-slate-950" placeholder="2000" />
-            </div>
-          </div>
-
-          <div>
-            <label class="block font-medium text-slate-700 mb-1">Reason / Notes *</label>
-            <textarea v-model="newAdvance.reason" rows="2" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Emergency, tuition, family support..."></textarea>
-          </div>
-
-          <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
-            <button type="button" @click="showAdvanceModal = false" class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-md">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-slate-900 text-white font-bold rounded-md hover:bg-slate-800 shadow-sm">
-              Issue Advance
-            </button>
-          </div>
-        </form>
       </div>
-    </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="showPayrollModal" class="modal-backdrop">
+        <div class="modal-panel max-w-3xl" role="dialog" aria-modal="true" aria-labelledby="payroll-title">
+          <div class="modal-header"><div><h3 id="payroll-title">Record Payroll</h3><p class="mt-0.5 text-xs text-slate-500">Gross salary becomes a labor expense; advance deductions reduce employee balances.</p></div><button type="button" class="icon-button" aria-label="Close" @click="showPayrollModal = false"><X class="h-4 w-4" /></button></div>
+          <form class="max-h-[80vh] overflow-y-auto p-6" @submit.prevent="handleRecordPayroll">
+            <div class="mb-4 grid grid-cols-2 gap-3">
+              <div><label class="form-label" for="payroll-period">Payroll period *</label><input id="payroll-period" v-model.trim="newPayroll.cutoffPeriod" class="form-control" required placeholder="e.g. Sep 1–15, 2026"></div>
+              <div><label class="form-label" for="payroll-date">Payment date *</label><input id="payroll-date" v-model="newPayroll.paymentDate" class="form-control" type="date" required></div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg border border-slate-200">
+              <table class="data-table">
+                <thead><tr class="data-table-header"><th class="px-4">Employee</th><th class="px-4 text-right">Gross salary</th><th class="px-4 text-right">Available advance</th><th class="px-4 text-right">Deduction</th><th class="px-4 text-right">Net paid</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr v-for="entry in newPayroll.entries" :key="entry.employeeId">
+                    <td class="px-4"><span class="font-medium text-slate-900">{{ entry.employeeName }}</span><span class="mt-0.5 block text-[11px] text-slate-400">{{ entry.position }}</span></td>
+                    <td class="px-4"><input v-model.number="entry.grossSalary" class="form-control ml-auto w-28 text-right font-mono" type="number" min="0" step="0.01"></td>
+                    <td class="px-4 text-right font-mono text-slate-500">{{ formatCurrency(advanceBalance(entry.employeeId)) }}</td>
+                    <td class="px-4"><input v-model.number="entry.advanceDeduction" class="form-control ml-auto w-28 text-right font-mono" type="number" min="0" :max="Math.min(entry.grossSalary || 0, advanceBalance(entry.employeeId))" step="0.01"></td>
+                    <td class="px-4 text-right font-mono font-semibold text-slate-900">{{ formatCurrency(Math.max(0, (entry.grossSalary || 0) - (entry.advanceDeduction || 0))) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-4 flex justify-end gap-6 border-y border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+              <span>Gross: <strong class="font-mono">{{ formatCurrency(payrollTotals.gross) }}</strong></span>
+              <span>Advance deductions: <strong class="font-mono text-brand-700">{{ formatCurrency(payrollTotals.deductions) }}</strong></span>
+              <span>Net paid: <strong class="font-mono">{{ formatCurrency(payrollTotals.net) }}</strong></span>
+            </div>
+            <div class="modal-actions mt-4"><button type="button" class="secondary-button" @click="showPayrollModal = false">Cancel</button><button type="submit" class="primary-button" :disabled="payrollTotals.gross <= 0">Record Payroll & Expense</button></div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { Plus, AlertCircle, X } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { AlertCircle, Banknote, Plus, WalletCards, X } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { useEmployeeStore } from '@/stores/employeeStore'
 
 const employeeStore = useEmployeeStore()
-
 const showAdvanceModal = ref(false)
-const newAdvance = ref({
-  employeeId: 'emp-1',
-  date: new Date().toISOString().split('T')[0],
-  amount: 2000,
-  reason: ''
-})
+const showPayrollModal = ref(false)
+const activeEmployees = computed(() => employeeStore.employees.filter(employee => employee.status === 'Active'))
+
+function emptyAdvance() {
+  return { employeeId: '', date: new Date().toISOString().split('T')[0], amount: null, reason: '' }
+}
+
+function emptyPayroll() {
+  return { cutoffPeriod: '', paymentDate: new Date().toISOString().split('T')[0], entries: [] }
+}
+
+const newAdvance = ref(emptyAdvance())
+const newPayroll = ref(emptyPayroll())
+
+const payrollTotals = computed(() => newPayroll.value.entries.reduce((totals, entry) => {
+  const gross = Number(entry.grossSalary) || 0
+  const deduction = Math.min(Number(entry.advanceDeduction) || 0, gross, advanceBalance(entry.employeeId))
+  totals.gross += gross
+  totals.deductions += deduction
+  totals.net += gross - deduction
+  return totals
+}, { gross: 0, deductions: 0, net: 0 }))
+
+function advanceBalance(employeeId) {
+  return employeeStore.employeeAdvancesMap[employeeId] || 0
+}
+
+function openAdvanceModal() {
+  if (!activeEmployees.value.length) return
+  newAdvance.value = { ...emptyAdvance(), employeeId: activeEmployees.value[0].id }
+  showAdvanceModal.value = true
+}
+
+function openPayrollModal() {
+  if (!activeEmployees.value.length) return
+  newPayroll.value = {
+    ...emptyPayroll(),
+    entries: activeEmployees.value.map(employee => ({ employeeId: employee.id, employeeName: employee.name, position: employee.position, grossSalary: 0, advanceDeduction: 0 }))
+  }
+  showPayrollModal.value = true
+}
 
 function handleIssueAdvance() {
   employeeStore.addCashAdvance(newAdvance.value)
   showAdvanceModal.value = false
-  newAdvance.value = {
-    employeeId: 'emp-1',
-    date: new Date().toISOString().split('T')[0],
-    amount: 2000,
-    reason: ''
-  }
+}
+
+function handleRecordPayroll() {
+  if (payrollTotals.value.gross <= 0) return
+  employeeStore.recordPayroll(newPayroll.value)
+  showPayrollModal.value = false
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(value || 0)
 }
 </script>
-

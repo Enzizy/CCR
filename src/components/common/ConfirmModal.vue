@@ -1,4 +1,5 @@
 <template>
+  <Teleport to="body">
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       <div class="px-6 pt-6 pb-4">
@@ -28,6 +29,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -56,4 +58,3 @@ defineProps({
 
 defineEmits(['confirm', 'cancel'])
 </script>
-

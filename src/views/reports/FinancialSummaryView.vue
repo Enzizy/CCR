@@ -3,14 +3,13 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Financial Performance & Cash Flow</h2>
+        <h2 class="page-title">Financial Performance & Cash Flow</h2>
       </div>
 
       <div class="flex items-center gap-2">
         <span class="text-xs font-medium text-slate-500">Fiscal Period:</span>
-        <select class="text-xs border rounded-lg px-3 py-1.5 bg-white border-slate-200 font-medium text-slate-700 shadow-xs">
-          <option value="2026-09">September 2026 (Current)</option>
-          <option value="2026-08">August 2026</option>
+        <select v-model="selectedPeriod" class="text-xs border rounded-lg px-3 py-1.5 bg-white border-slate-200 font-medium text-slate-700 shadow-xs">
+          <option v-for="period in periodOptions" :key="period.value" :value="period.value">{{ period.label }}</option>
         </select>
       </div>
     </div>
@@ -22,12 +21,12 @@
         <div class="mt-3 flex items-center justify-between text-xs">
           <div>
             <div class="text-slate-400 text-[11px]">Delivered Revenue</div>
-            <div class="font-mono font-semibold text-slate-900 text-sm mt-0.5">₱{{ totalRevenue.toLocaleString() }}</div>
+            <div class="font-mono font-semibold text-slate-900 text-sm mt-0.5">₱{{ periodRevenue.toLocaleString() }}</div>
           </div>
           <span class="text-sm text-slate-300 font-normal">-</span>
           <div>
             <div class="text-slate-400 text-[11px]">Central Expenses</div>
-            <div class="font-mono font-semibold text-slate-700 text-sm mt-0.5">₱{{ expenseStore.totalExpenses.toLocaleString() }}</div>
+            <div class="font-mono font-semibold text-slate-700 text-sm mt-0.5">₱{{ periodExpenses.toLocaleString() }}</div>
           </div>
           <span class="text-sm text-slate-300 font-normal">=</span>
           <div>
@@ -42,12 +41,12 @@
         <div class="mt-3 flex items-center justify-between text-xs">
           <div>
             <div class="text-slate-400 text-[11px]">Cash Collected</div>
-            <div class="font-mono font-semibold text-emerald-700 text-sm mt-0.5">₱{{ billingStore.totalCollections.toLocaleString() }}</div>
+            <div class="font-mono font-semibold text-emerald-700 text-sm mt-0.5">₱{{ periodCollections.toLocaleString() }}</div>
           </div>
           <span class="text-sm text-slate-300 font-normal">-</span>
           <div>
             <div class="text-slate-400 text-[11px]">Cash Disbursed</div>
-            <div class="font-mono font-semibold text-slate-700 text-sm mt-0.5">₱{{ expenseStore.totalExpenses.toLocaleString() }}</div>
+            <div class="font-mono font-semibold text-slate-700 text-sm mt-0.5">₱{{ periodExpenses.toLocaleString() }}</div>
           </div>
           <span class="text-sm text-slate-300 font-normal">=</span>
           <div>
@@ -60,45 +59,22 @@
       </div>
     </div>
 
-    <!-- Metric Breakdown Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-        <span class="text-xs font-medium text-slate-500">Delivered Revenue</span>
-        <div class="mt-2 text-2xl font-semibold font-mono tracking-tight text-slate-900">₱{{ totalRevenue.toLocaleString() }}</div>
-      </div>
-
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-        <span class="text-xs font-medium text-emerald-700">Total Collections</span>
-        <div class="mt-2 text-2xl font-semibold font-mono tracking-tight text-emerald-800">₱{{ billingStore.totalCollections.toLocaleString() }}</div>
-      </div>
-
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-        <span class="text-xs font-medium text-amber-700">Accounts Receivable</span>
-        <div class="mt-2 text-2xl font-semibold font-mono tracking-tight text-amber-800">₱{{ billingStore.totalReceivables.toLocaleString() }}</div>
-      </div>
-
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-        <span class="text-xs font-medium text-slate-500">Central Expenses</span>
-        <div class="mt-2 text-2xl font-semibold font-mono tracking-tight text-slate-900">₱{{ expenseStore.totalExpenses.toLocaleString() }}</div>
-      </div>
-    </div>
-
     <!-- Expense Category Breakdown Table -->
     <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-100">
         <h3 class="text-sm font-semibold text-slate-900">Monthly Operating Expense Allocation</h3>
       </div>
 
-      <table class="w-full text-left text-xs border-collapse">
+      <table class="data-table">
         <thead>
-          <tr class="bg-slate-50/60 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+          <tr class="data-table-header">
             <th class="py-3 px-6">Expense Category</th>
             <th class="py-3 px-4 w-48">Share of Total</th>
             <th class="py-3 px-6 text-right">Amount</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 text-slate-700">
-          <tr v-for="item in expenseStore.categoryBreakdown" :key="item.category" class="hover:bg-slate-50/50 transition-colors">
+          <tr v-for="item in periodCategoryBreakdown" :key="item.category" class="hover:bg-slate-50/50 transition-colors">
             <td class="py-3.5 px-6 font-medium text-slate-900">{{ item.category }}</td>
             <td class="py-3.5 px-4">
               <div class="flex items-center gap-2">
@@ -110,13 +86,16 @@
             </td>
             <td class="py-3.5 px-6 text-right font-mono font-medium text-slate-900">₱{{ item.amount.toLocaleString() }}</td>
           </tr>
+          <tr v-if="periodCategoryBreakdown.length === 0">
+            <td colspan="3" class="py-12 text-center text-xs text-slate-500">No expenses recorded for this period.</td>
+          </tr>
         </tbody>
         <tfoot>
           <tr class="bg-slate-50/60 font-medium border-t border-slate-200">
             <td class="py-3 px-6 text-slate-500 uppercase tracking-wider text-[11px]">Total Consolidated Expenses</td>
             <td></td>
-            <td class="py-3 px-6 text-right font-mono font-semibold text-slate-900 text-sm">
-              ₱{{ expenseStore.totalExpenses.toLocaleString() }}
+            <td class="py-3 px-6 text-right font-mono font-semibold text-slate-900">
+              ₱{{ periodExpenses.toLocaleString() }}
             </td>
           </tr>
         </tfoot>
@@ -126,7 +105,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useDeliveryStore } from '@/stores/deliveryStore'
 import { useBillingStore } from '@/stores/billingStore'
 import { useExpenseStore } from '@/stores/expenseStore'
@@ -135,16 +114,52 @@ const deliveryStore = useDeliveryStore()
 const billingStore = useBillingStore()
 const expenseStore = useExpenseStore()
 
-const totalRevenue = computed(() => {
-  return deliveryStore.deliveryReceipts.reduce((acc, dr) => acc + dr.subtotal, 0)
+const selectedPeriod = ref(new Date().toISOString().slice(0, 7))
+
+const periodOptions = computed(() => {
+  const periods = new Set([selectedPeriod.value])
+  deliveryStore.deliveryReceipts.forEach(item => item.date && periods.add(item.date.slice(0, 7)))
+  billingStore.payments.forEach(item => item.date && periods.add(item.date.slice(0, 7)))
+  expenseStore.expenses.forEach(item => item.date && periods.add(item.date.slice(0, 7)))
+
+  return [...periods].sort().reverse().map(value => ({
+    value,
+    label: new Date(`${value}-01T00:00:00`).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })
+  }))
+})
+
+const periodRevenue = computed(() => deliveryStore.deliveryReceipts
+  .filter(item => item.date?.startsWith(selectedPeriod.value))
+  .reduce((total, item) => total + Number(item.subtotal || 0), 0))
+
+const periodCollections = computed(() => billingStore.payments
+  .filter(item => item.date?.startsWith(selectedPeriod.value))
+  .reduce((total, item) => total + Number(item.amount || 0), 0))
+
+const periodExpenseRecords = computed(() => expenseStore.expenses
+  .filter(item => item.date?.startsWith(selectedPeriod.value)))
+
+const periodExpenses = computed(() => periodExpenseRecords.value
+  .reduce((total, item) => total + Number(item.amount || 0), 0))
+
+const periodCategoryBreakdown = computed(() => {
+  const totals = periodExpenseRecords.value.reduce((result, item) => {
+    result[item.category] = (result[item.category] || 0) + Number(item.amount || 0)
+    return result
+  }, {})
+
+  return Object.entries(totals).map(([category, amount]) => ({
+    category,
+    amount,
+    percent: Math.round((amount / (periodExpenses.value || 1)) * 100)
+  })).sort((a, b) => b.amount - a.amount)
 })
 
 const operatingProfit = computed(() => {
-  return totalRevenue.value - expenseStore.totalExpenses
+  return periodRevenue.value - periodExpenses.value
 })
 
 const netCash = computed(() => {
-  return billingStore.totalCollections - expenseStore.totalExpenses
+  return periodCollections.value - periodExpenses.value
 })
 </script>
-

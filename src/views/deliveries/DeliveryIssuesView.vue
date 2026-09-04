@@ -3,34 +3,25 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Delivery Damages & Replacement</h2>
+        <h2 class="page-title">Delivery Damages & Replacement</h2>
       </div>
 
       <button
-        @click="showReportModal = true"
-        class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white bg-brand-700 hover:bg-brand-800 rounded-lg shadow-xs transition-colors"
+        @click="openReportModal"
+        :disabled="standardReceipts.length === 0"
+        :title="standardReceipts.length ? 'Report damaged delivery' : 'No billable delivery receipts available'"
+        class="primary-button"
       >
         <Plus class="w-4 h-4" />
         <span>Report Damaged Delivery</span>
       </button>
     </div>
 
-    <!-- Architectural Rule Banner -->
-    <div class="p-4 bg-purple-50/60 border border-purple-200/70 rounded-xl flex items-start gap-3">
-      <ShieldAlert class="w-4 h-4 text-purple-700 mt-0.5 shrink-0" />
-      <div class="text-xs">
-        <span class="font-medium text-purple-950">Accounting & Fulfillment Safeguard:</span>
-        <p class="text-slate-600 mt-0.5 font-normal">
-          Free replacement deliveries issue a replacement DR referencing original damages, but <strong>do not inflate original PO fulfillment counts</strong> or generate additional billable revenue.
-        </p>
-      </div>
-    </div>
-
     <!-- Issues Table -->
     <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
-      <table class="w-full text-left text-xs border-collapse">
+      <table class="data-table">
         <thead>
-          <tr class="bg-slate-50/60 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+          <tr class="data-table-header">
             <th class="py-3 px-5 w-28">Date Reported</th>
             <th class="py-3 px-4 w-28">Original DR</th>
             <th class="py-3 px-4">Customer</th>
@@ -72,11 +63,15 @@
               </button>
             </td>
           </tr>
+          <tr v-if="deliveryStore.deliveryIssues.length === 0">
+            <td colspan="7" class="py-12 text-center text-xs text-slate-500">No delivery damage reports recorded.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Report Damaged Delivery Modal -->
+    <Teleport to="body">
     <div v-if="showReportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -95,6 +90,7 @@
             <div>
               <label class="block font-medium text-slate-700 mb-1">Original Delivery DR *</label>
               <select v-model="newIssue.originalDrNumber" required class="w-full px-3 py-2 border rounded-md border-slate-300" @change="onDrSelect">
+                <option disabled value="">Select a delivery receipt</option>
                 <option v-for="dr in standardReceipts" :key="dr.id" :value="dr.drNumber">
                   {{ dr.drNumber }} - {{ dr.customerName }}
                 </option>
@@ -110,11 +106,16 @@
           <div class="grid grid-cols-3 gap-3">
             <div class="col-span-2">
               <label class="block font-medium text-slate-700 mb-1">Damaged Item *</label>
-              <input v-model="newIssue.productName" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Product specification" />
+              <select v-model="newIssue.productName" required class="w-full px-3 py-2 border rounded-md border-slate-300">
+                <option disabled value="">Select a delivered item</option>
+                <option v-for="item in selectedReceipt?.items || []" :key="item.productId || item.name" :value="item.name">
+                  {{ item.name }} ({{ item.quantity }} {{ item.unit || 'unit' }})
+                </option>
+              </select>
             </div>
             <div>
               <label class="block font-medium text-slate-700 mb-1">Qty Damaged *</label>
-              <input v-model.number="newIssue.quantityAffected" type="number" min="1" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono font-bold" />
+              <input v-model.number="newIssue.quantityAffected" type="number" min="1" :max="selectedItem?.quantity || 1" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono font-bold" />
             </div>
           </div>
 
@@ -130,12 +131,13 @@
         </form>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Plus, ShieldAlert, X } from 'lucide-vue-next'
+import { Plus, X } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { useDeliveryStore } from '@/stores/deliveryStore'
 
@@ -145,13 +147,16 @@ const standardReceipts = computed(() => {
   return deliveryStore.deliveryReceipts.filter(r => !r.isReplacement)
 })
 
+const selectedReceipt = computed(() => standardReceipts.value.find(receipt => receipt.drNumber === newIssue.value.originalDrNumber))
+const selectedItem = computed(() => selectedReceipt.value?.items?.find(item => item.name === newIssue.value.productName))
+
 const showReportModal = ref(false)
 const newIssue = ref({
   dateReported: new Date().toISOString().split('T')[0],
-  originalDrNumber: 'DR #4322',
-  customerId: 'cust-1',
-  customerName: 'Cebu Landmaster Inc.',
-  productName: 'Door, Wooden Solid Panel 0.90x2.10 m. w/ Jamb Door',
+  originalDrNumber: '',
+  customerId: '',
+  customerName: '',
+  productName: '',
   quantityAffected: 1,
   reason: ''
 })
@@ -161,16 +166,32 @@ function onDrSelect() {
   if (dr) {
     newIssue.value.customerId = dr.customerId
     newIssue.value.customerName = dr.customerName
+    newIssue.value.productName = ''
+    newIssue.value.quantityAffected = 1
     if (dr.items && dr.items.length > 0) {
       newIssue.value.productName = dr.items[0].name
     }
   }
 }
 
+function openReportModal() {
+  if (standardReceipts.value.length === 0) return
+  showReportModal.value = true
+}
+
 function handleReportDamage() {
+  if (!selectedReceipt.value || !selectedItem.value || newIssue.value.quantityAffected > selectedItem.value.quantity) return
   deliveryStore.reportDeliveryDamage(newIssue.value)
   showReportModal.value = false
-  newIssue.value.reason = ''
+  newIssue.value = {
+    dateReported: new Date().toISOString().split('T')[0],
+    originalDrNumber: '',
+    customerId: '',
+    customerName: '',
+    productName: '',
+    quantityAffected: 1,
+    reason: ''
+  }
 }
 
 function openReplacementModal(issue) {
@@ -183,7 +204,7 @@ function openReplacementModal(issue) {
     customerId: issue.customerId,
     customerName: issue.customerName,
     project: 'Warranty Replacement',
-    deliveredBy: 'Pedro Cruz (Driver)',
+    deliveredBy: '',
     receivedBy: 'Pending Client Signature',
     items: [
       {
@@ -198,4 +219,3 @@ function openReplacementModal(issue) {
   deliveryStore.resolveIssueWithReplacement(issue.id, repDr)
 }
 </script>
-

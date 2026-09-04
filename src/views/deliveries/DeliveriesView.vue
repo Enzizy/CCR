@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Delivery Receipts (DR)</h2>
+        <h2 class="page-title">Delivery Receipts (DR)</h2>
       </div>
 
       <div class="flex items-center gap-2">
@@ -50,9 +50,9 @@
 
     <!-- DR Table -->
     <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
-      <table class="w-full text-left text-xs border-collapse">
+      <table class="data-table">
         <thead>
-          <tr class="bg-slate-50/60 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+          <tr class="data-table-header">
             <th class="py-3 px-5 w-28">DR Number</th>
             <th class="py-3 px-4 w-28">Date</th>
             <th class="py-3 px-4">Customer</th>
@@ -97,6 +97,9 @@
               </router-link>
             </td>
           </tr>
+          <tr v-if="filteredReceipts.length === 0">
+            <td colspan="8" class="py-12 text-center text-xs text-slate-500">No delivery receipts match this view.</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -126,4 +129,3 @@ const filteredReceipts = computed(() => {
   return deliveryStore.deliveryReceipts
 })
 </script>
-

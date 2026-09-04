@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-bold text-slate-900">Collections & Official Payments Received</h2>
+        <h2 class="page-title">Collections & Official Payments Received</h2>
       </div>
 
       <div class="flex items-center gap-3">
@@ -16,9 +16,9 @@
 
     <!-- Payments Table -->
     <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-      <table class="w-full text-left text-xs border-collapse">
+      <table class="data-table">
         <thead>
-          <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+          <tr class="data-table-header">
             <th class="py-3 px-4 w-28">Receipt #</th>
             <th class="py-3 px-4 w-28">Payment Date</th>
             <th class="py-3 px-4">Customer Name</th>
@@ -28,7 +28,7 @@
             <th class="py-3 px-4 text-right">Amount Received</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100 font-medium text-slate-800">
+        <tbody class="divide-y divide-slate-100">
           <tr
             v-for="pay in billingStore.payments"
             :key="pay.id"
@@ -47,9 +47,12 @@
               <div class="font-mono text-slate-900">{{ pay.referenceNumber }}</div>
               <div class="text-[11px] text-slate-500 font-normal">{{ pay.bankName }}</div>
             </td>
-            <td class="py-3.5 px-4 text-right font-mono font-bold text-emerald-700 text-sm">
+            <td class="py-3.5 px-4 text-right font-mono font-bold text-emerald-700">
               ₱{{ pay.amount.toLocaleString() }}
             </td>
+          </tr>
+          <tr v-if="billingStore.payments.length === 0">
+            <td colspan="7" class="py-12 text-center text-xs text-slate-500">No payments recorded yet.</td>
           </tr>
         </tbody>
       </table>
@@ -62,4 +65,3 @@ import { useBillingStore } from '@/stores/billingStore'
 
 const billingStore = useBillingStore()
 </script>
-

@@ -6,12 +6,10 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
         <div>
           <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-lg bg-brand-700 text-white flex items-center justify-center font-bold text-xs shadow-xs tracking-wider">
-              CCR
-            </div>
+            <img :src="ccrLogo" alt="CCR Construction Supply logo" class="w-9 h-9 shrink-0 object-contain" />
             <div>
-              <h1 class="text-xs font-bold text-slate-900 tracking-wide uppercase">CCR Construction</h1>
-              <p class="text-[11px] text-slate-400 font-normal">Poblacion, Barili, Cebu</p>
+              <h1 class="text-xs font-bold text-slate-900 tracking-wide uppercase">{{ settingsStore.company.name }}</h1>
+              <p class="text-[11px] text-slate-400 font-normal">{{ settingsStore.company.address }}</p>
             </div>
           </div>
         </div>
@@ -45,7 +43,7 @@
                 <FileText class="w-4 h-4" :class="isActive('/purchase-orders') ? 'text-brand-700' : 'text-slate-400'" />
                 <span>Purchase Orders</span>
               </div>
-              <span :class="isActive('/purchase-orders') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ salesStore.purchaseOrders.length }}</span>
+              <span v-if="salesStore.purchaseOrders.length" :class="isActive('/purchase-orders') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ salesStore.purchaseOrders.length }}</span>
             </router-link>
 
             <router-link
@@ -57,7 +55,7 @@
                 <PackageCheck class="w-4 h-4" :class="isActive('/deliveries') ? 'text-brand-700' : 'text-slate-400'" />
                 <span>Delivery Receipts (DR)</span>
               </div>
-              <span :class="isActive('/deliveries') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ deliveryStore.deliveryReceipts.length }}</span>
+              <span v-if="deliveryStore.deliveryReceipts.length" :class="isActive('/deliveries') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ deliveryStore.deliveryReceipts.length }}</span>
             </router-link>
 
             <router-link
@@ -69,7 +67,7 @@
                 <Truck class="w-4 h-4" :class="isActive('/delivery-trips') ? 'text-brand-700' : 'text-slate-400'" />
                 <span>Delivery Trips</span>
               </div>
-              <span :class="isActive('/delivery-trips') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ deliveryStore.deliveryTrips.length }}</span>
+              <span v-if="deliveryStore.deliveryTrips.length" :class="isActive('/delivery-trips') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ deliveryStore.deliveryTrips.length }}</span>
             </router-link>
 
             <router-link
@@ -119,7 +117,7 @@
                 <ReceiptText class="w-4 h-4" :class="isActive('/statements-of-account') ? 'text-brand-700' : 'text-slate-400'" />
                 <span>Statements (SOA)</span>
               </div>
-              <span :class="isActive('/statements-of-account') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ billingStore.statements.length }}</span>
+              <span v-if="billingStore.statements.length" :class="isActive('/statements-of-account') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ billingStore.statements.length }}</span>
             </router-link>
 
             <router-link
@@ -131,7 +129,7 @@
                 <CreditCard class="w-4 h-4" :class="isActive('/payments') ? 'text-brand-700' : 'text-slate-400'" />
                 <span>Payments Received</span>
               </div>
-              <span :class="isActive('/payments') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ billingStore.payments.length }}</span>
+              <span v-if="billingStore.payments.length" :class="isActive('/payments') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">{{ billingStore.payments.length }}</span>
             </router-link>
 
             <router-link
@@ -143,7 +141,7 @@
                 <Clock class="w-4 h-4" :class="isActive('/accounts-receivable') ? 'text-brand-700' : 'text-slate-400'" />
                 <span>Accounts Receivable</span>
               </div>
-              <span class="text-[11px] bg-brand-100 text-brand-800 font-medium font-mono px-2 py-0.5 rounded-full">
+              <span v-if="billingStore.totalReceivables > 0" class="text-[11px] bg-brand-100 text-brand-800 font-medium font-mono px-2 py-0.5 rounded-full">
                 ₱{{ (billingStore.totalReceivables / 1000).toFixed(0) }}k
               </span>
             </router-link>
@@ -163,7 +161,7 @@
                 <DollarSign class="w-4 h-4" :class="isActive('/expenses') ? 'text-brand-700' : 'text-slate-400'" />
                 <span>Central Expenses</span>
               </div>
-              <span :class="isActive('/expenses') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">
+              <span v-if="expenseStore.expenses.length" :class="isActive('/expenses') ? 'bg-brand-100 text-brand-800 font-semibold' : 'bg-slate-100 text-slate-500 font-medium'" class="text-[11px] px-2 py-0.5 rounded-full font-mono">
                 {{ expenseStore.expenses.length }}
               </span>
             </router-link>
@@ -218,48 +216,13 @@
         </div>
       </nav>
 
-      <!-- Bottom Status -->
-      <div class="p-3.5 border-t border-slate-100 bg-white flex items-center justify-between text-xs text-slate-500">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-brand-500"></span>
-          <span class="font-medium text-slate-600">Fiscal: Sept 2026</span>
-        </div>
-        <button
-          @click="assistantStore.openAssistant"
-          class="flex items-center gap-1.5 text-brand-700 hover:text-brand-900 font-semibold px-2 py-1 rounded-md hover:bg-brand-50 transition-colors"
-        >
-          <Bot class="w-3.5 h-3.5" />
-          <span>Ask AI</span>
-        </button>
-      </div>
     </aside>
 
     <!-- Main Content Area -->
     <div class="flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-[#f8fafc]">
       <!-- Top Bar -->
-      <header class="no-print bg-white border-b border-slate-200/80 px-6 py-3 flex items-center justify-between shrink-0 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)]">
-        <div class="flex items-center gap-3">
-          <h2 class="text-sm font-semibold text-slate-800 tracking-tight">{{ routeTitle }}</h2>
-        </div>
-
-        <div class="flex items-center gap-2.5">
-          <!-- Quick Action Buttons -->
-          <router-link
-            to="/purchase-orders"
-            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors shadow-xs"
-          >
-            <Plus class="w-3.5 h-3.5 text-brand-700" />
-            <span>New PO</span>
-          </router-link>
-
-          <router-link
-            to="/expenses"
-            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors shadow-xs"
-          >
-            <Plus class="w-3.5 h-3.5 text-brand-700" />
-            <span>Log Expense</span>
-          </router-link>
-
+      <header class="no-print bg-white border-b border-slate-200/80 px-6 py-3 flex items-center justify-end shrink-0 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)]">
+        <div class="flex items-center">
           <button
             @click="assistantStore.openAssistant"
             class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-brand-700 hover:bg-brand-800 rounded-lg shadow-xs transition-all"
@@ -278,13 +241,12 @@
       </main>
     </div>
 
-    <!-- AI Assistant Floating Drawer -->
+    <!-- AI Assistant Drawer -->
     <AssistantDrawer class="no-print" />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   LayoutDashboard,
@@ -302,7 +264,6 @@ import {
   Banknote,
   TrendingUp,
   Sliders,
-  Plus,
   Bot
 } from 'lucide-vue-next'
 
@@ -312,7 +273,9 @@ import { useBillingStore } from '@/stores/billingStore'
 import { useExpenseStore } from '@/stores/expenseStore'
 import { useEmployeeStore } from '@/stores/employeeStore'
 import { useAssistantStore } from '@/stores/assistantStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import AssistantDrawer from '@/components/assistant/AssistantDrawer.vue'
+import ccrLogo from '@/assets/ccr-logo.png'
 
 const route = useRoute()
 const salesStore = useSalesStore()
@@ -321,31 +284,11 @@ const billingStore = useBillingStore()
 const expenseStore = useExpenseStore()
 const employeeStore = useEmployeeStore()
 const assistantStore = useAssistantStore()
+const settingsStore = useSettingsStore()
 
 function isActive(path) {
   if (path === '/') return route.path === '/'
   return route.path.startsWith(path)
 }
 
-const routeTitle = computed(() => {
-  switch (route.path) {
-    case '/': return 'Executive Dashboard'
-    case '/purchase-orders': return 'Purchase Orders & Fulfillment'
-    case '/deliveries': return 'Delivery Receipts (DR)'
-    case '/delivery-trips': return 'Delivery Trips & Multi-drop Manifest'
-    case '/delivery-issues': return 'Delivery Damages & Free Replacements'
-    case '/customers': return 'Customer Directory'
-    case '/products': return 'Products & Architectural Specifications'
-    case '/statements-of-account': return 'Statements of Account (SOA)'
-    case '/payments': return 'Payments Received & Official Receipts'
-    case '/accounts-receivable': return 'Accounts Receivable Aging'
-    case '/expenses': return 'Centralized Business Expenses'
-    case '/employees': return 'Workers & Staff Directory'
-    case '/payroll-advances': return 'Payroll & Cash Advances'
-    case '/financial-summary': return 'Monthly Financial Performance'
-    case '/settings': return 'System Settings & Document Sequence'
-    default: return 'Business Management System'
-  }
-})
 </script>
-

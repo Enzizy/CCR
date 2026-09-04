@@ -3,51 +3,34 @@ import { ref } from 'vue'
 import { useBillingStore } from './billingStore'
 import { useExpenseStore } from './expenseStore'
 import { useDeliveryStore } from './deliveryStore'
-import { useSalesStore } from './salesStore'
 
 export const useAssistantStore = defineStore('assistant', () => {
   const isOpen = ref(false)
   const isTyping = ref(false)
+  const messages = ref([{
+    id: 'welcome',
+    role: 'assistant',
+    text: 'Hello! I am your CCR Business Assistant. Ask me about revenue, receivables, deliveries, or expenses.',
+    timestamp: '',
+    proposedAction: null
+  }])
 
-  const messages = ref([
-    {
-      id: 'msg-1',
-      role: 'assistant',
-      text: 'Hello! I am your CCR Business Assistant. You can ask me about purchase orders, outstanding balances, delivery trips, recent expenses, or have me log new business transactions.',
-      timestamp: '12:30 PM',
-      proposedAction: null
-    }
-  ])
-
-  function toggleAssistant() {
-    isOpen.value = !isOpen.value
-  }
-
-  function openAssistant() {
-    isOpen.value = true
-  }
-
-  function closeAssistant() {
-    isOpen.value = false
-  }
+  function openAssistant() { isOpen.value = true }
+  function closeAssistant() { isOpen.value = false }
 
   function sendMessage(text) {
     if (!text.trim()) return
-
-    const userMsg = {
-      id: 'msg-' + Date.now(),
+    const message = {
+      id: `msg-${Date.now()}`,
       role: 'user',
       text: text.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: currentTime(),
       proposedAction: null
     }
-
-    messages.value.push(userMsg)
+    messages.value.push(message)
     isTyping.value = true
-
-    // Process response using application data
     setTimeout(() => {
-      processAssistantResponse(userMsg.text)
+      processAssistantResponse(message.text)
       isTyping.value = false
     }, 600)
   }
@@ -55,135 +38,77 @@ export const useAssistantStore = defineStore('assistant', () => {
   function processAssistantResponse(query) {
     const billingStore = useBillingStore()
     const expenseStore = useExpenseStore()
-    const salesStore = useSalesStore()
     const deliveryStore = useDeliveryStore()
-
-    const q = query.toLowerCase()
-    let replyText = ''
+    const normalizedQuery = query.toLowerCase()
+    let replyText
     let proposedAction = null
 
-    // 1. Inquire about Cebu Landmaster balance
-    if (q.includes('cebu landmaster') && (q.includes('owe') || q.includes('balance') || q.includes('receivable'))) {
-      const cliReceivables = billingStore.customerReceivables.find(c => c.customerName.includes('Landmaster'))
-      const totalOwed = cliReceivables ? cliReceivables.totalOutstanding : 0
-      replyText = `Cebu Landmaster Inc. currently owes **₱${totalOwed.toLocaleString()}** across their delivered orders.\n\n` +
-        `• **SOA-2026-001**: ₱395,500 remaining balance (Due: Sept 19, 2026)\n` +
-        `• **SOA-2026-003**: ₱310,000 remaining balance (Due: Oct 2, 2026)\n\n` +
-        `They have already paid ₱200,000 against SOA-2026-001.`
-    }
-    // 2. Inquire about overdue SOAs
-    else if (q.includes('overdue') || (q.includes('due') && q.includes('soa'))) {
-      const overdueList = billingStore.enrichedStatements.filter(s => s.agingCategory === 'Overdue')
-      const dueSoonList = billingStore.enrichedStatements.filter(s => s.agingCategory === 'Due Soon')
-
-      if (overdueList.length === 0) {
-        replyText = `There are currently **no overdue SOAs** as of today (Sept 4, 2026).\n\n` +
-          `However, you have **${dueSoonList.length} SOA due soon** within the next 7-15 days:\n` +
-          `• **SOA-2026-001** (Cebu Landmaster Inc.) - ₱395,500 due on September 19.`
-      } else {
-        replyText = `There are **${overdueList.length} overdue SOAs** totaling ₱${overdueList.reduce((a, b) => a + b.balance, 0).toLocaleString()}.`
-      }
-    }
-    // 3. Inquire about gas/fuel expenses
-    else if (q.includes('gas') || q.includes('fuel')) {
-      const gasExpenses = expenseStore.expenses.filter(e => e.subCategory === 'Gas/Fuel')
-      const totalGas = gasExpenses.reduce((a, b) => a + b.amount, 0)
-      replyText = `Total gas and fuel expenditures logged: **₱${totalGas.toLocaleString()}**.\n\n` +
-        `Recent trip refuels:\n` +
-        gasExpenses.slice(0, 3).map(e => `• ${e.date}: ₱${e.amount.toLocaleString()} - ${e.description}`).join('\n')
-    }
-    // 4. Inquire about total revenue / profit
-    else if (q.includes('revenue') || q.includes('profit') || q.includes('summary')) {
-      // Deterministic calculation
-      const revenue = deliveryStore.deliveryReceipts.reduce((a, b) => a + b.subtotal, 0)
-      const expenses = expenseStore.totalExpenses
-      const profit = revenue - expenses
-      const collections = billingStore.totalCollections
-
-      replyText = `Here is the current operational financial snapshot:\n\n` +
-        `• **Delivered Revenue**: ₱${revenue.toLocaleString()}\n` +
-        `• **Collected Cash**: ₱${collections.toLocaleString()}\n` +
-        `• **Total Expenses**: ₱${expenses.toLocaleString()}\n` +
-        `• **Estimated Profit**: ₱${profit.toLocaleString()}\n` +
-        `• **Outstanding Receivables**: ₱${billingStore.totalReceivables.toLocaleString()}`
-    }
-    // 5. Action proposal: Log gas expense
-    else if (q.includes('spend') || q.includes('log') || q.includes('record') || (q.includes('gas') && q.includes('today'))) {
+    if (normalizedQuery.includes('overdue') || (normalizedQuery.includes('due') && normalizedQuery.includes('soa'))) {
+      const overdue = billingStore.enrichedStatements.filter(statement => statement.agingCategory === 'Overdue')
+      const dueSoon = billingStore.enrichedStatements.filter(statement => statement.agingCategory === 'Due Soon')
+      const overdueTotal = overdue.reduce((total, statement) => total + statement.balance, 0)
+      replyText = overdue.length
+        ? `There are **${overdue.length} overdue SOAs** totaling ${formatCurrency(overdueTotal)}.`
+        : `There are **no overdue SOAs**. ${dueSoon.length} SOA${dueSoon.length === 1 ? ' is' : 's are'} due within 7 days.`
+    } else if (normalizedQuery.includes('gas') || normalizedQuery.includes('fuel')) {
+      const gasExpenses = expenseStore.expenses.filter(expense => expense.subCategory === 'Gas/Fuel')
+      const total = gasExpenses.reduce((sum, expense) => sum + expense.amount, 0)
+      replyText = `Recorded gas and fuel expenses total **${formatCurrency(total)}** across ${gasExpenses.length} entr${gasExpenses.length === 1 ? 'y' : 'ies'}.`
+    } else if (normalizedQuery.includes('revenue') || normalizedQuery.includes('profit') || normalizedQuery.includes('summary')) {
+      const revenue = deliveryStore.deliveryReceipts.reduce((total, delivery) => total + delivery.subtotal, 0)
+      replyText = `Current recorded totals:\n\n• **Delivered revenue:** ${formatCurrency(revenue)}\n• **Collections:** ${formatCurrency(billingStore.totalCollections)}\n• **Expenses:** ${formatCurrency(expenseStore.totalExpenses)}\n• **Estimated operating net:** ${formatCurrency(revenue - expenseStore.totalExpenses)}\n• **Accounts receivable:** ${formatCurrency(billingStore.totalReceivables)}`
+    } else if (normalizedQuery.includes('owe') || normalizedQuery.includes('balance') || normalizedQuery.includes('receivable')) {
+      replyText = billingStore.customerReceivables.length
+        ? `Total accounts receivable is **${formatCurrency(billingStore.totalReceivables)}** across ${billingStore.customerReceivables.length} customer${billingStore.customerReceivables.length === 1 ? '' : 's'}.`
+        : 'There are no customer receivables recorded yet.'
+    } else if (normalizedQuery.includes('spend') || normalizedQuery.includes('log') || normalizedQuery.includes('record')) {
       const match = query.match(/(\d+[\d,]*)/)
-      const amount = match ? parseInt(match[1].replace(/,/g, '')) : 2500
-
-      replyText = `I have drafted an expense entry based on your request. Please review and confirm below before saving to financial records.`
+      const amount = match ? Number(match[1].replace(/,/g, '')) : 0
+      replyText = 'I drafted an expense entry. Review it carefully before saving.'
       proposedAction = {
         type: 'RECORD_EXPENSE',
         title: 'Confirm Business Expense',
         details: {
           category: 'Transportation',
           subCategory: 'Gas/Fuel',
-          description: 'Gasoline refuel for logistics truck',
-          amount: amount,
+          description: 'Gasoline refuel for logistics vehicle',
+          amount,
           date: new Date().toISOString().split('T')[0],
-          supplier: 'Shell Gas Station',
+          supplier: '',
           paymentMethod: 'Cash'
         },
         status: 'pending'
       }
-    }
-    // 6. Generic answer
-    else {
-      replyText = `I can help you look up specific information from your business records or take action. Try asking:\n` +
-        `• "How much do Cebu Landmaster Inc. owe us?"\n` +
-        `• "What SOAs are due soon?"\n` +
-        `• "How much did we spend on gas?"\n` +
-        `• "What is our current revenue and profit?"\n` +
-        `• "Record ₱2,500 gas expense today"`
+    } else {
+      replyText = 'I can summarize revenue, receivables, overdue SOAs, deliveries, and expenses from the records currently in the system.'
     }
 
-    messages.value.push({
-      id: 'msg-' + Date.now(),
-      role: 'assistant',
-      text: replyText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      proposedAction
-    })
+    messages.value.push({ id: `msg-${Date.now()}`, role: 'assistant', text: replyText, timestamp: currentTime(), proposedAction })
   }
 
   function confirmAction(action) {
-    const expenseStore = useExpenseStore()
-    if (action.type === 'RECORD_EXPENSE') {
-      expenseStore.addExpense(action.details)
-      action.status = 'confirmed'
-
-      messages.value.push({
-        id: 'msg-' + Date.now(),
-        role: 'assistant',
-        text: `✅ **Expense recorded successfully!** ₱${action.details.amount.toLocaleString()} has been logged under **Transportation (Gas/Fuel)** and immediately added to your monthly expense totals.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        proposedAction: null
-      })
+    if (action.type !== 'RECORD_EXPENSE') return
+    const expense = useExpenseStore().addExpense(action.details)
+    if (!expense) {
+      messages.value.push({ id: `msg-${Date.now()}`, role: 'assistant', text: 'The expense was not saved because it needs a valid amount greater than zero.', timestamp: currentTime(), proposedAction: null })
+      return
     }
+    action.status = 'confirmed'
+    messages.value.push({ id: `msg-${Date.now()}`, role: 'assistant', text: `Expense recorded successfully: **${formatCurrency(action.details.amount)}**.`, timestamp: currentTime(), proposedAction: null })
   }
 
   function cancelAction(action) {
     action.status = 'cancelled'
-    messages.value.push({
-      id: 'msg-' + Date.now(),
-      role: 'assistant',
-      text: `❌ Action cancelled. No records were modified.`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      proposedAction: null
-    })
+    messages.value.push({ id: `msg-${Date.now()}`, role: 'assistant', text: 'Action cancelled. No records were modified.', timestamp: currentTime(), proposedAction: null })
   }
 
-  return {
-    isOpen,
-    isTyping,
-    messages,
-    toggleAssistant,
-    openAssistant,
-    closeAssistant,
-    sendMessage,
-    confirmAction,
-    cancelAction
+  function currentTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
+
+  function formatCurrency(value) {
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(value)
+  }
+
+  return { isOpen, isTyping, messages, openAssistant, closeAssistant, sendMessage, confirmAction, cancelAction }
 })
-

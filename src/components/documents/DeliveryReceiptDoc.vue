@@ -21,20 +21,15 @@
     <!-- Company Header -->
     <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
       <div class="flex items-start gap-3">
-        <div class="w-12 h-12 rounded-full border-2 border-[#5c8b3e] bg-[#f5f9f2] flex items-center justify-center shrink-0 p-1">
-          <div class="w-full h-full rounded-full border border-[#9ec37f] bg-white flex flex-col items-center justify-center text-center">
-            <span class="text-[7px] font-black text-[#2c431d] uppercase">CCR</span>
-            <span class="text-[5px] font-bold text-[#5c8b3e]">SUPPLY</span>
-          </div>
-        </div>
+        <img :src="ccrLogo" alt="CCR Construction Supply logo" class="w-12 h-12 shrink-0 object-contain" />
 
         <div>
           <h1 class="text-base font-black italic tracking-tight text-black uppercase">
-            CCR CONSTRUCTION SUPPLY
+            {{ company.name }}
           </h1>
-          <p class="text-xs text-slate-700 italic">Poblacion, Barili, Cebu</p>
+          <p class="text-xs text-slate-700 italic">{{ company.address }}</p>
           <p class="text-xs text-slate-800 mt-1 font-mono">
-            Cellphone No.: 0995 743 7989 / 0998 558 0067
+            Cellphone No.: {{ company.phone }}
           </p>
         </div>
       </div>
@@ -67,15 +62,15 @@
       <div class="space-y-1.5 border-l border-black pl-6">
         <div class="flex justify-between">
           <span class="text-slate-600 font-medium">Purchase Order No:</span>
-          <span class="font-mono font-bold text-black">{{ receipt.poNumber || '4100017940' }}</span>
+          <span class="font-mono font-bold text-black">{{ receipt.poNumber || '—' }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-slate-600 font-medium">Project Site:</span>
-          <span class="font-semibold text-black text-right">{{ receipt.project || 'CASA MIRA SOUTH' }}</span>
+          <span class="font-semibold text-black text-right">{{ receipt.project || '—' }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-slate-600 font-medium">Terms:</span>
-          <span class="font-semibold text-black">30 days upon delivery on site</span>
+          <span class="font-semibold text-black">{{ receipt.paymentTerms || company.defaultTerms }}</span>
         </div>
         <div class="flex justify-between" v-if="receipt.tripId">
           <span class="text-slate-600 font-medium">Trip Reference:</span>
@@ -155,7 +150,7 @@
       <!-- Delivered By -->
       <div>
         <div class="h-12 flex items-end justify-center font-medium italic text-black">
-          {{ receipt.deliveredBy || 'Pedro Cruz' }}
+          {{ receipt.deliveredBy || '—' }}
         </div>
         <div class="border-t-2 border-black pt-1.5 text-center">
           <div class="font-bold text-black uppercase">Delivered By</div>
@@ -179,6 +174,11 @@
 
 <script setup>
 import { computed } from 'vue'
+import ccrLogo from '@/assets/ccr-logo.png'
+import { useSettingsStore } from '@/stores/settingsStore'
+
+const settingsStore = useSettingsStore()
+const company = computed(() => settingsStore.company)
 
 const props = defineProps({
   receipt: {

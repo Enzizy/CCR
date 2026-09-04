@@ -51,7 +51,8 @@
       </button>
       <button
         @click="$emit('confirm', action)"
-        class="px-3 py-1.5 font-semibold text-white bg-brand-700 hover:bg-brand-800 rounded shadow-sm transition-colors flex items-center gap-1"
+        :disabled="!Number(action.details.amount) || Number(action.details.amount) <= 0"
+        class="px-3 py-1.5 font-semibold text-white bg-brand-700 hover:bg-brand-800 rounded shadow-sm transition-colors flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Confirm & Save Record
       </button>
@@ -69,4 +70,3 @@ defineProps({
 
 defineEmits(['confirm', 'cancel'])
 </script>
-

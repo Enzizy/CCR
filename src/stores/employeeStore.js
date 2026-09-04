@@ -3,198 +3,99 @@ import { ref, computed } from 'vue'
 import { useExpenseStore } from './expenseStore'
 
 export const useEmployeeStore = defineStore('employee', () => {
-  const employees = ref([
-    {
-      id: 'emp-1',
-      name: 'Juan Dela Cruz',
-      position: 'Master Carpenter / Shop Lead',
-      payType: 'Daily',
-      rate: 750,
-      phone: '+63 917 111 2233',
-      startDate: '2023-03-15',
-      status: 'Active'
-    },
-    {
-      id: 'emp-2',
-      name: 'Pedro Cruz',
-      position: 'Delivery Driver / Logistics',
-      payType: 'Daily',
-      rate: 650,
-      phone: '+63 920 444 5566',
-      startDate: '2023-06-01',
-      status: 'Active'
-    },
-    {
-      id: 'emp-3',
-      name: 'Mark Bautista',
-      position: 'Sander & Finisher',
-      payType: 'Daily',
-      rate: 550,
-      phone: '+63 922 777 8899',
-      startDate: '2024-01-10',
-      status: 'Active'
-    },
-    {
-      id: 'emp-4',
-      name: 'Elena Santos',
-      position: 'Shop Admin & Inventory Clerk',
-      payType: 'Monthly',
-      rate: 18000,
-      phone: '+63 918 333 4455',
-      startDate: '2023-10-01',
-      status: 'Active'
-    }
-  ])
+  const employees = ref([])
+  const cashAdvances = ref([])
+  const payrollRecords = ref([])
 
-  // Cash Advance Ledger (Balances owed by employees)
-  const cashAdvances = ref([
-    {
-      id: 'ca-1',
-      employeeId: 'emp-1',
-      employeeName: 'Juan Dela Cruz',
-      date: '2026-08-10',
-      amount: 3000,
-      deductedAmount: 2000, // ₱2,000 already deducted on Aug 31 cutoff
-      balance: 1000,
-      status: 'Open',
-      reason: 'Family emergency / medical allowance'
-    },
-    {
-      id: 'ca-2',
-      employeeId: 'emp-2',
-      employeeName: 'Pedro Cruz',
-      date: '2026-08-25',
-      amount: 1500,
-      deductedAmount: 1500, // fully repaid
-      balance: 0,
-      status: 'Repaid',
-      reason: 'Motorcycle repair'
-    },
-    {
-      id: 'ca-3',
-      employeeId: 'emp-3',
-      employeeName: 'Mark Bautista',
-      date: '2026-09-01',
-      amount: 2500,
-      deductedAmount: 0,
-      balance: 2500,
-      status: 'Open',
-      reason: 'House rental deposit'
-    }
-  ])
-
-  // Payroll Payout Records
-  const payrollRecords = ref([
-    {
-      id: 'payr-1',
-      payrollRef: 'PR-2026-08B',
-      cutoffPeriod: 'Aug 16 - 31, 2026',
-      paymentDate: '2026-08-31',
-      totalGross: 52000,
-      totalAdvanceDeductions: 3500,
-      totalNetPaid: 48500,
-      status: 'Paid',
-      entries: [
-        {
-          employeeId: 'emp-1',
-          employeeName: 'Juan Dela Cruz',
-          grossSalary: 11250, // 15 days @ 750
-          advanceDeduction: 2000,
-          netPaid: 9250
-        },
-        {
-          employeeId: 'emp-2',
-          employeeName: 'Pedro Cruz',
-          grossSalary: 9750,  // 15 days @ 650
-          advanceDeduction: 1500,
-          netPaid: 8250
-        },
-        {
-          employeeId: 'emp-3',
-          employeeName: 'Mark Bautista',
-          grossSalary: 8250,  // 15 days @ 550
-          advanceDeduction: 0,
-          netPaid: 8250
-        },
-        {
-          employeeId: 'emp-4',
-          employeeName: 'Elena Santos',
-          grossSalary: 9000,  // half month of 18000
-          advanceDeduction: 0,
-          netPaid: 9000
-        }
-      ]
-    }
-  ])
-
-  // Getters
-  const totalOpenAdvances = computed(() => {
-    return cashAdvances.value.filter(ca => ca.status === 'Open').reduce((acc, ca) => acc + ca.balance, 0)
-  })
+  const totalOpenAdvances = computed(() => cashAdvances.value.filter(advance => advance.status === 'Open').reduce((total, advance) => total + advance.balance, 0))
 
   const employeeAdvancesMap = computed(() => {
-    const map = {}
-    cashAdvances.value.forEach(ca => {
-      if (ca.status === 'Open') {
-        map[ca.employeeId] = (map[ca.employeeId] || 0) + ca.balance
-      }
+    const balances = {}
+    cashAdvances.value.forEach(advance => {
+      if (advance.status === 'Open') balances[advance.employeeId] = (balances[advance.employeeId] || 0) + advance.balance
     })
-    return map
+    return balances
   })
 
-  // Actions
+  function addEmployee(data) {
+    const rate = Number(data.rate)
+    if (!data.name?.trim() || !data.position?.trim() || !Number.isFinite(rate) || rate < 0) return null
+
+    const employee = {
+      id: `emp-${employees.value.length + 1}`,
+      name: data.name.trim(),
+      position: data.position.trim(),
+      payType: data.payType,
+      rate,
+      phone: data.phone?.trim() || '',
+      startDate: data.startDate,
+      status: data.status || 'Active'
+    }
+    employees.value.unshift(employee)
+    return employee
+  }
+
   function addCashAdvance(data) {
-    const emp = employees.value.find(e => e.id === data.employeeId)
-    const newCa = {
-      id: 'ca-' + (cashAdvances.value.length + 1),
+    const employee = employees.value.find(item => item.id === data.employeeId)
+    const amount = Number(data.amount)
+    if (!employee || !Number.isFinite(amount) || amount <= 0) return null
+
+    const newAdvance = {
+      id: `ca-${cashAdvances.value.length + 1}`,
       employeeId: data.employeeId,
-      employeeName: emp ? emp.name : 'Unknown Employee',
+      employeeName: employee?.name || 'Unknown Employee',
       date: data.date,
-      amount: Number(data.amount),
+      amount,
       deductedAmount: 0,
-      balance: Number(data.amount),
+      balance: amount,
       status: 'Open',
       reason: data.reason || 'Cash Advance'
     }
-    cashAdvances.value.unshift(newCa)
-    return newCa
+    cashAdvances.value.unshift(newAdvance)
+    return newAdvance
   }
 
   function recordPayroll(payrollData) {
     const expenseStore = useExpenseStore()
-    const payrRef = `PR-2026-09A`
+    const entries = (payrollData.entries || [])
+      .map(entry => {
+        const grossSalary = Math.max(0, Number(entry.grossSalary) || 0)
+        const availableAdvance = employeeAdvancesMap.value[entry.employeeId] || 0
+        const advanceDeduction = Math.min(grossSalary, availableAdvance, Math.max(0, Number(entry.advanceDeduction) || 0))
+        return { ...entry, grossSalary, advanceDeduction, netPaid: grossSalary - advanceDeduction }
+      })
+      .filter(entry => entry.grossSalary > 0)
+    const totalGross = entries.reduce((total, entry) => total + entry.grossSalary, 0)
+    const totalAdvanceDeductions = entries.reduce((total, entry) => total + entry.advanceDeduction, 0)
+    if (entries.length === 0 || totalGross <= 0) return null
 
     const newRecord = {
-      id: 'payr-' + (payrollRecords.value.length + 1),
-      payrollRef: payrRef,
+      id: `payr-${payrollRecords.value.length + 1}`,
+      payrollRef: `PR-${new Date(`${payrollData.paymentDate}T00:00:00`).getFullYear()}-${String(payrollRecords.value.length + 1).padStart(3, '0')}`,
       cutoffPeriod: payrollData.cutoffPeriod,
       paymentDate: payrollData.paymentDate,
-      totalGross: Number(payrollData.totalGross),
-      totalAdvanceDeductions: Number(payrollData.totalAdvanceDeductions),
-      totalNetPaid: Number(payrollData.totalGross) - Number(payrollData.totalAdvanceDeductions),
+      totalGross,
+      totalAdvanceDeductions,
+      totalNetPaid: totalGross - totalAdvanceDeductions,
       status: 'Paid',
-      entries: payrollData.entries || []
+      entries
     }
-
     payrollRecords.value.unshift(newRecord)
 
-    // Apply deductions against active advances
-    if (payrollData.entries) {
-      payrollData.entries.forEach(entry => {
-        if (entry.advanceDeduction > 0) {
-          const openAdv = cashAdvances.value.find(ca => ca.employeeId === entry.employeeId && ca.status === 'Open')
-          if (openAdv) {
-            openAdv.deductedAmount += entry.advanceDeduction
-            openAdv.balance = Math.max(0, openAdv.amount - openAdv.deductedAmount)
-            if (openAdv.balance === 0) {
-              openAdv.status = 'Repaid'
-            }
-          }
-        }
+    newRecord.entries.forEach(entry => {
+      if (entry.advanceDeduction <= 0) return
+      let remainingDeduction = entry.advanceDeduction
+      const openAdvances = cashAdvances.value.filter(item => item.employeeId === entry.employeeId && item.status === 'Open')
+      openAdvances.forEach(advance => {
+        if (remainingDeduction <= 0) return
+        const appliedAmount = Math.min(advance.balance, remainingDeduction)
+        advance.deductedAmount += appliedAmount
+        advance.balance = Math.max(0, advance.amount - advance.deductedAmount)
+        remainingDeduction -= appliedAmount
+        if (advance.balance === 0) advance.status = 'Repaid'
       })
-    }
+    })
 
-    // Record gross labor in general business expenses (without double counting advance deductions)
     expenseStore.addExpense({
       category: 'Labor',
       subCategory: 'Worker Salary',
@@ -205,9 +106,8 @@ export const useEmployeeStore = defineStore('employee', () => {
       paymentMethod: 'Cash',
       sourceType: 'PAYROLL',
       referenceId: newRecord.payrollRef,
-      notes: `Gross wages earned: ₱${newRecord.totalGross.toLocaleString()}. Net paid after advance deductions: ₱${newRecord.totalNetPaid.toLocaleString()}.`
+      notes: `Gross wages earned: ${newRecord.totalGross}. Net paid after advance deductions: ${newRecord.totalNetPaid}.`
     })
-
     return newRecord
   }
 
@@ -217,8 +117,8 @@ export const useEmployeeStore = defineStore('employee', () => {
     payrollRecords,
     totalOpenAdvances,
     employeeAdvancesMap,
+    addEmployee,
     addCashAdvance,
     recordPayroll
   }
 })
-

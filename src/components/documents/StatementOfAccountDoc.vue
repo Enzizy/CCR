@@ -1,189 +1,133 @@
 <template>
-  <div class="print-container bg-white text-black max-w-4xl mx-auto p-8 border border-slate-300 rounded-lg shadow-sm print:border-none print:shadow-none print:p-0 font-sans">
-    <!-- Top Header: Logo, Company Name & Metadata -->
-    <div class="flex justify-between items-start mb-6">
-      <!-- Logo and Company Details -->
-      <div class="flex items-start gap-3">
-        <!-- Seal/Logo Graphic -->
-        <div class="w-14 h-14 rounded-full border-2 border-[#5c8b3e] bg-[#f5f9f2] flex items-center justify-center shrink-0 p-1">
-          <div class="w-full h-full rounded-full border border-[#9ec37f] bg-white flex flex-col items-center justify-center text-center">
-            <span class="text-[8px] font-black text-[#2c431d] uppercase tracking-tighter leading-none">CCR</span>
-            <span class="text-[6px] font-bold text-[#5c8b3e] leading-tight">SUPPLY</span>
+  <div class="soa-document print-container">
+    <article class="soa-sheet" aria-label="Statement of Account">
+      <header class="soa-header">
+        <div class="company-block">
+          <div class="company-identity">
+            <img class="company-logo" :src="ccrLogo" alt="CCR Construction Supply logo">
+            <div>
+              <h1>{{ company.name.toUpperCase() }}</h1>
+              <p>{{ company.address }}</p>
+            </div>
           </div>
+          <p class="company-phone">Cellphone No.: {{ company.phone }}</p>
         </div>
 
-        <div>
-          <h1 class="text-base font-black italic tracking-tight text-black uppercase">
-            CCR CONSTRUCTION SUPPLY
-          </h1>
-          <p class="text-xs text-slate-700 italic">Poblacion, Barili, Cebu</p>
-          <p class="text-xs text-slate-800 mt-1 font-mono">
-            Cellphone No.: 0995 743 7989 / 0998 558 0067
-          </p>
+        <dl class="statement-meta">
+          <div>
+            <dt>Statement Date:</dt>
+            <dd>{{ statementDateFormatted }}</dd>
+          </div>
+          <div>
+            <dt>SOA No. :</dt>
+            <dd>{{ statement.soaNumber || '—' }}</dd>
+          </div>
+        </dl>
+      </header>
+
+      <section class="customer-block">
+        <h2>STATEMENT OF ACCOUNT</h2>
+        <p class="customer-name">{{ statement.customerName || '—' }}</p>
+        <p class="customer-address">{{ customerAddress }}</p>
+      </section>
+
+      <section class="ledger-section">
+        <table class="soa-ledger">
+          <colgroup>
+            <col class="col-po-date">
+            <col class="col-po-number">
+            <col class="col-delivery">
+            <col class="col-quantity">
+            <col class="col-description">
+            <col class="col-unit">
+            <col class="col-cost">
+            <col class="col-amount">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>PO DATE<br>ISSUED</th>
+              <th>CUSTOMER<br>PO NOS.</th>
+              <th>DELIVERY<br>NOS.</th>
+              <th>TOTAL QTY<br>DELIVERED</th>
+              <th>ITEM DESCRIPTION</th>
+              <th>UNIT</th>
+              <th>UNIT COST</th>
+              <th>AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in statement.items || []" :key="index">
+              <td class="center">{{ formatShortDate(item.poDate || statement.poDate) }}</td>
+              <td class="center">{{ statement.poNumber || '—' }}</td>
+              <td class="center">{{ deliveryNumber }}</td>
+              <td class="center">{{ formatNumber(item.quantity) }}</td>
+              <td class="description">{{ item.name || item.productName || '—' }}</td>
+              <td class="center">{{ item.unit || 'set' }}</td>
+              <td class="number">{{ formatNumber(item.unitPrice) }}</td>
+              <td class="number">{{ formatNumber(lineAmount(item)) }}</td>
+            </tr>
+
+            <tr v-if="statement.project">
+              <td></td><td></td><td></td><td></td>
+              <td class="project-name">{{ statement.project }}</td>
+              <td></td><td></td><td class="number">-</td>
+            </tr>
+
+            <tr class="nothing-follows">
+              <td></td><td></td><td></td><td></td>
+              <td>*** nothing follows ***</td>
+              <td></td><td></td><td class="number">-</td>
+            </tr>
+
+            <tr v-for="row in blankRowCount" :key="`blank-${row}`" class="blank-row" aria-hidden="true">
+              <td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="number">-</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td></td>
+              <td colspan="3" class="total-spacer"></td>
+              <td colspan="3" class="total-label">TOTAL AMOUNT&nbsp; ----&gt;</td>
+              <td class="total-value">{{ formatNumber(statement.totalAmount) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <p class="payment-terms"><span>Payment Terms:</span> {{ statement.paymentTerms || '30 days upon delivery on site' }}</p>
+      </section>
+
+      <section class="payment-instructions">
+        <p>*For check payments, please make the check payable to <strong>{{ company.bankAccountName }}</strong></p>
+        <p>*For online transfers, kindly use the following banking information:</p>
+        <dl>
+          <div><dt>Bank:</dt><dd><strong>{{ company.bankName }}</strong></dd></div>
+          <div><dt>Account Holder:</dt><dd><strong>{{ company.bankAccountName }}</strong></dd></div>
+          <div><dt>Account Number:</dt><dd><strong>{{ company.bankAccountNumber }}</strong></dd></div>
+        </dl>
+      </section>
+
+      <footer class="signature-section">
+        <div class="prepared-signature">
+          <div class="signature-writing" aria-hidden="true">Rodil</div>
+          <div class="signature-line"><span>RODIL B. VERGARA</span></div>
+          <p>PREPARED BY:</p>
         </div>
-      </div>
-
-      <!-- Statement Date & SOA Number -->
-      <div class="text-right text-xs space-y-1">
-        <div>
-          <span class="font-normal text-slate-800">Statement Date: </span>
-          <span class="font-bold text-black font-mono">{{ statementDateFormatted }}</span>
+        <div class="confirmed-signature">
+          <div class="signature-line"></div>
+          <p>CONFIRMED BY:</p>
         </div>
-        <div>
-          <span class="font-normal text-slate-800">SOA No. : </span>
-          <span class="font-bold text-black font-mono">{{ statement.soaNumber }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Centered Document Title & Customer Block -->
-    <div class="text-center my-6">
-      <h2 class="text-base font-bold tracking-wide uppercase text-black">
-        STATEMENT OF ACCOUNT
-      </h2>
-      <div class="text-xs mt-1 text-black font-bold uppercase tracking-wider">
-        {{ statement.customerName || 'CEBU LANDMASTERS, INC.' }}
-      </div>
-      <div class="text-xs text-slate-700 max-w-xl mx-auto mt-0.5 leading-relaxed">
-        {{ customerAddress }}
-      </div>
-    </div>
-
-    <!-- Main Commercial Grid Table -->
-    <div class="mb-4">
-      <table class="w-full text-xs border-collapse border-2 border-black">
-        <thead>
-          <tr class="bg-[#9ec37f] text-black font-bold text-center border-b-2 border-black uppercase text-[11px] tracking-tight">
-            <th class="py-2 px-1 border-r border-black w-24">PO DATE<br>ISSUED</th>
-            <th class="py-2 px-1 border-r border-black w-28">CUSTOMER<br>PO NOS.</th>
-            <th class="py-2 px-1 border-r border-black w-24">DELIVERY<br>NOS.</th>
-            <th class="py-2 px-1 border-r border-black w-24">TOTAL QTY<br>DELIVERED</th>
-            <th class="py-2 px-3 border-r border-black">ITEM DESCRIPTION</th>
-            <th class="py-2 px-1 border-r border-black w-14">UNIT</th>
-            <th class="py-2 px-2 border-r border-black w-24">UNIT COST</th>
-            <th class="py-2 px-2 w-28">AMOUNT</th>
-          </tr>
-        </thead>
-        <tbody class="text-black font-medium">
-          <!-- Active Delivery Line Items -->
-          <tr
-            v-for="(item, idx) in statement.items"
-            :key="idx"
-            class="border-b border-black text-center"
-          >
-            <td class="py-1.5 px-1 border-r border-black font-mono">{{ item.poDate || statement.date }}</td>
-            <td class="py-1.5 px-1 border-r border-black font-mono font-bold">{{ statement.poNumber || '4100017940' }}</td>
-            <td class="py-1.5 px-1 border-r border-black font-mono font-bold">{{ statement.drNumber ? statement.drNumber.replace('DR #', '') : '4322' }}</td>
-            <td class="py-1.5 px-1 border-r border-black font-mono font-bold">{{ item.quantity }}</td>
-            <td class="py-1.5 px-3 border-r border-black text-left font-sans">{{ item.name }}</td>
-            <td class="py-1.5 px-1 border-r border-black">{{ item.unit || 'sets' }}</td>
-            <td class="py-1.5 px-2 border-r border-black text-right font-mono">{{ Number(item.unitPrice || 0).toLocaleString() }}</td>
-            <td class="py-1.5 px-2 text-right font-mono font-bold">{{ Number(item.amount || (item.quantity * item.unitPrice)).toLocaleString() }}</td>
-          </tr>
-
-          <!-- Project Sub-header Row -->
-          <tr v-if="statement.project" class="border-b border-black">
-            <td class="py-1.5 border-r border-black"></td>
-            <td class="py-1.5 border-r border-black"></td>
-            <td class="py-1.5 border-r border-black"></td>
-            <td class="py-1.5 border-r border-black"></td>
-            <td class="py-1.5 px-3 border-r border-black text-center font-bold uppercase tracking-wider text-black">
-              {{ statement.project }}
-            </td>
-            <td class="py-1.5 border-r border-black"></td>
-            <td class="py-1.5 border-r border-black"></td>
-            <td class="py-1.5 text-center font-mono">-</td>
-          </tr>
-
-          <!-- Nothing Follows Row -->
-          <tr class="border-b border-black text-center text-[10px] italic">
-            <td class="py-1 border-r border-black"></td>
-            <td class="py-1 border-r border-black"></td>
-            <td class="py-1 border-r border-black"></td>
-            <td class="py-1 border-r border-black"></td>
-            <td class="py-1 border-r border-black font-semibold tracking-wider text-slate-800">*** nothing follows ***</td>
-            <td class="py-1 border-r border-black"></td>
-            <td class="py-1 border-r border-black"></td>
-            <td class="py-1 font-mono">-</td>
-          </tr>
-
-          <!-- Spacer Blank Rows for Commercial Format -->
-          <tr v-for="n in blankRowCount" :key="'blank-' + n" class="border-b border-black text-center text-xs">
-            <td class="py-1.5 border-r border-black">&nbsp;</td>
-            <td class="py-1.5 border-r border-black">&nbsp;</td>
-            <td class="py-1.5 border-r border-black">&nbsp;</td>
-            <td class="py-1.5 border-r border-black">&nbsp;</td>
-            <td class="py-1.5 border-r border-black">&nbsp;</td>
-            <td class="py-1.5 border-r border-black">&nbsp;</td>
-            <td class="py-1.5 border-r border-black">&nbsp;</td>
-            <td class="py-1.5 font-mono text-slate-400">-</td>
-          </tr>
-        </tbody>
-
-        <!-- Total Amount Footer Row in Exact Green -->
-        <tfoot>
-          <tr class="border-t-2 border-black font-bold text-xs">
-            <td colspan="4" class="border-r border-black py-2 bg-white"></td>
-            <td colspan="3" class="bg-[#9ec37f] border-r border-black py-2 px-3 text-right uppercase tracking-wider text-black font-black">
-              TOTAL AMOUNT ----&gt;
-            </td>
-            <td class="bg-[#9ec37f] py-2 px-2 text-right font-mono font-black text-sm text-black">
-              {{ (statement.totalAmount || 0).toLocaleString() }}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    <!-- Payment Terms -->
-    <div class="text-xs text-black font-medium mb-4">
-      <span>Payment Terms: </span>
-      <span class="font-normal">{{ statement.paymentTerms || '30 days upon delivery on site' }}</span>
-    </div>
-
-    <!-- Bank Remittance Instructions -->
-    <div class="text-xs text-black space-y-1 mb-8">
-      <p class="font-normal">*For check payments, please make the check payable to <strong>Rodil B. Vergara</strong></p>
-      <p class="font-normal">*For online transfers, kindly use the following banking information:</p>
-      <div class="pl-4 space-y-0.5 mt-1 font-normal">
-        <p>Bank: <strong>Metrobank</strong></p>
-        <p>Account Holder: <strong>Rodil B. Vergara</strong></p>
-        <p>Account Number: <strong class="font-mono">599-3-599-14522-3</strong></p>
-      </div>
-    </div>
-
-    <!-- Signatures Section -->
-    <div class="grid grid-cols-2 gap-12 pt-4 text-xs">
-      <!-- Prepared By (Rodil B. Vergara) -->
-      <div>
-        <div class="relative h-14 flex items-end">
-          <!-- Stylized signature script -->
-          <span class="absolute bottom-2 left-4 font-serif italic text-xl text-slate-900 select-none opacity-90">
-            Rodil Vergara
-          </span>
-          <div class="w-56 border-b-2 border-black"></div>
-        </div>
-        <div class="pt-1 font-bold text-black uppercase tracking-wider text-[11px]">
-          RODIL B. VERGARA
-        </div>
-        <div class="text-[10px] text-black font-bold uppercase tracking-wider">
-          PREPARED BY:
-        </div>
-      </div>
-
-      <!-- Confirmed By -->
-      <div class="flex flex-col justify-end">
-        <div class="w-56 border-b-2 border-black"></div>
-        <div class="pt-1 text-[10px] text-black font-bold uppercase tracking-wider">
-          CONFIRMED BY:
-        </div>
-      </div>
-    </div>
+      </footer>
+    </article>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import ccrLogo from '@/assets/ccr-logo.png'
+import { useSettingsStore } from '@/stores/settingsStore'
+
+const settingsStore = useSettingsStore()
+const company = computed(() => settingsStore.company)
 
 const props = defineProps({
   statement: {
@@ -192,31 +136,142 @@ const props = defineProps({
   },
   customer: {
     type: Object,
-    default: () => null
+    default: null
   }
 })
 
-const customerAddress = computed(() => {
-  if (props.customer?.address) return props.customer.address
-  if (props.statement?.customerName?.toLowerCase().includes('landmaster')) {
-    return '10th Floor Park Centrale Tower Jose Ma Del Mar St. B2 L3, Cebu IT Park Apas 6000 Cebu City (Capital) Cebu Philippines'
-  }
-  return 'Subangdaku, Mandaue City, Cebu, Philippines'
-})
+const customerAddress = computed(() => props.customer?.address || '—')
 
-const statementDateFormatted = computed(() => {
-  if (!props.statement.date) return '3-Sep-26'
-  const d = new Date(props.statement.date)
-  if (isNaN(d.getTime())) return props.statement.date
-  const day = d.getDate()
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const month = months[d.getMonth()]
-  const year = String(d.getFullYear()).slice(-2)
-  return `${day}-${month}-${year}`
+const statementDateFormatted = computed(() => formatShortDate(props.statement.date))
+
+const deliveryNumber = computed(() => {
+  if (!props.statement.drNumber) return '—'
+  return String(props.statement.drNumber).replace(/^DR\s*#?\s*/i, '')
 })
 
 const blankRowCount = computed(() => {
-  const currentCount = (props.statement.items?.length || 0) + (props.statement.project ? 1 : 0) + 1
-  return Math.max(3, 8 - currentCount)
+  const itemRows = props.statement.items?.length || 0
+  const projectRows = props.statement.project ? 1 : 0
+  return Math.max(0, 11 - itemRows - projectRows - 1)
 })
+
+function formatShortDate(value) {
+  if (!value) return '—'
+  const date = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return value
+  const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date.getMonth()]
+  return `${date.getDate()}-${month}-${String(date.getFullYear()).slice(-2)}`
+}
+
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 })
+}
+
+function lineAmount(item) {
+  return item.amount ?? (Number(item.quantity || 0) * Number(item.unitPrice || 0))
+}
 </script>
+
+<style scoped>
+.soa-document {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  background: #fff;
+  color: #000;
+  box-shadow: 0 2px 14px rgb(15 23 42 / 12%);
+}
+
+.soa-sheet {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm 16mm 14mm;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9pt;
+  line-height: 1.25;
+}
+
+.soa-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.company-block { width: 105mm; }
+.company-identity { display: flex; align-items: center; gap: 4mm; }
+
+.company-logo {
+  display: block;
+  width: 18mm;
+  height: 18mm;
+  flex: 0 0 18mm;
+  object-fit: contain;
+}
+
+.company-identity h1 { margin: 0; font-size: 11pt; font-style: italic; font-weight: 800; }
+.company-identity p { margin: 1.5mm 0 0; font-size: 8pt; }
+.company-phone { margin: 2.2mm 0 0 0.8mm; font-size: 8.5pt; }
+
+.statement-meta { width: 38mm; margin: 4mm 0 0; font-size: 8.5pt; }
+.statement-meta div { display: grid; grid-template-columns: 23mm 1fr; margin-bottom: 1.2mm; }
+.statement-meta dt, .statement-meta dd { margin: 0; }
+.statement-meta dd { font-weight: 700; white-space: nowrap; }
+
+.customer-block { margin-top: 11mm; text-align: center; }
+.customer-block h2 { margin: 0; font-size: 13pt; font-weight: 700; }
+.customer-name { margin: 1.5mm 0 0; font-size: 9pt; }
+.customer-address { max-width: 100mm; margin: 1mm auto 0; font-size: 8.5pt; line-height: 1.35; }
+
+.ledger-section { margin-top: 10mm; }
+.soa-ledger { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 7.8pt; }
+.soa-ledger th, .soa-ledger td { border: 0.25mm solid #000; }
+.soa-ledger th { height: 8.5mm; padding: 0.8mm; background: #a8d08d; font-size: 7.5pt; line-height: 1.15; text-align: center; }
+.soa-ledger tbody td { box-sizing: border-box; height: 4.35mm; padding: 0.45mm 1.2mm; vertical-align: middle; }
+.soa-ledger .center { text-align: center; }
+.soa-ledger .number { padding-right: 1.5mm; text-align: right; }
+.soa-ledger .description { padding-left: 2mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.soa-ledger .project-name { font-weight: 700; text-align: center; text-transform: uppercase; }
+.soa-ledger .nothing-follows td:nth-child(5) { font-size: 7pt; font-style: italic; font-weight: 700; text-align: center; }
+.soa-ledger tfoot td { height: 6.5mm; }
+.soa-ledger .total-spacer { border-right: 0; }
+.soa-ledger .total-label, .soa-ledger .total-value { border-left: 0; background: #c6e0b4; font-weight: 700; }
+.soa-ledger .total-label { padding-right: 2mm; text-align: right; }
+.soa-ledger .total-value { padding-right: 1.5mm; text-align: right; }
+
+.col-po-date { width: 10%; }
+.col-po-number { width: 12.5%; }
+.col-delivery { width: 8%; }
+.col-quantity { width: 9%; }
+.col-description { width: 34.5%; }
+.col-unit { width: 5%; }
+.col-cost { width: 11%; }
+.col-amount { width: 10%; }
+
+.payment-terms { margin: 1.2mm 0 0 0.6mm; font-size: 8.5pt; }
+.payment-terms span { margin-right: 2mm; }
+.payment-instructions { margin: 6mm 0 0 0.6mm; font-size: 8.5pt; line-height: 1.4; }
+.payment-instructions p { margin: 0; }
+.payment-instructions dl { margin: 1mm 0 0 3mm; }
+.payment-instructions dl div { display: flex; gap: 1mm; }
+.payment-instructions dt, .payment-instructions dd { margin: 0; }
+
+.signature-section { display: flex; justify-content: space-between; margin-top: 12mm; padding: 0 0.5mm; font-size: 8pt; }
+.prepared-signature, .confirmed-signature { position: relative; width: 45mm; }
+.confirmed-signature { margin-top: 40mm; }
+.signature-line { position: relative; height: 10mm; border-bottom: 0.7mm solid #000; text-align: center; }
+.signature-line span { position: absolute; right: 0; bottom: 0.3mm; left: 0; }
+.signature-writing { position: absolute; z-index: 1; bottom: 4mm; left: 13mm; transform: rotate(-8deg); font-family: "Brush Script MT", "Segoe Script", cursive; font-size: 20pt; }
+.signature-section p { margin: 1mm 0 0 0.5mm; }
+
+@media (max-width: 900px) {
+  .soa-document { transform-origin: top left; }
+}
+
+@media print {
+  .soa-document { width: auto; max-width: none; margin: 0; box-shadow: none; }
+  .soa-sheet { width: 180mm; min-height: 273mm; padding: 8mm 0 0; }
+}
+</style>

@@ -17,6 +17,7 @@
 
       <div class="flex items-center gap-2">
         <button
+          v-if="currentReceipt"
           @click="triggerPrint"
           class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition-colors"
         >
@@ -54,7 +55,7 @@ const salesStore = useSalesStore()
 
 const currentReceipt = computed(() => {
   const id = route.params.id
-  return deliveryStore.deliveryReceipts.find(dr => dr.id === id) || deliveryStore.deliveryReceipts[0]
+  return deliveryStore.deliveryReceipts.find(dr => dr.id === id)
 })
 
 const customer = computed(() => {
@@ -66,4 +67,3 @@ function triggerPrint() {
   window.print()
 }
 </script>
-

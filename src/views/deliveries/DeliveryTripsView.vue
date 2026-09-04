@@ -3,31 +3,26 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Delivery Trips & Manifest</h2>
+        <h2 class="page-title">Delivery Trips & Manifest</h2>
       </div>
 
       <button
-        @click="showCreateTripModal = true"
-        class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white bg-brand-700 hover:bg-brand-800 rounded-lg shadow-xs transition-colors"
+        @click="openCreateTripModal"
+        :disabled="availableReceipts.length === 0"
+        :title="availableReceipts.length ? 'Dispatch delivery trip' : 'No unassigned delivery receipts'"
+        class="primary-button"
       >
         <Plus class="w-4 h-4" />
         <span>Dispatch Delivery Trip</span>
       </button>
     </div>
 
-    <!-- Automatic Expense Feature Callout -->
-    <div class="p-4 bg-brand-50/60 border border-brand-200/70 rounded-xl flex items-start gap-3">
-      <Fuel class="w-4 h-4 text-brand-700 mt-0.5 shrink-0" />
-      <div class="text-xs">
-        <span class="font-medium text-brand-950">Automatic Fuel Expense Integration:</span>
-        <p class="text-slate-600 mt-0.5 font-normal">
-          When fuel or toll costs are recorded on a delivery trip, the system automatically posts the corresponding general business expense under <strong>Transportation &gt; Gas/Fuel</strong> without duplicate manual entry.
-        </p>
-      </div>
-    </div>
-
     <!-- Trip Cards -->
     <div class="grid grid-cols-1 gap-6">
+      <div v-if="deliveryStore.deliveryTrips.length === 0" class="section-card empty-state">
+        <h3>No delivery trips yet</h3>
+        <p>Dispatch a trip after at least one delivery receipt has been created.</p>
+      </div>
       <div
         v-for="trip in deliveryStore.deliveryTrips"
         :key="trip.id"
@@ -103,6 +98,7 @@
     </div>
 
     <!-- Create Trip Modal -->
+    <Teleport to="body">
     <div v-if="showCreateTripModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -123,22 +119,18 @@
             </div>
             <div>
               <label class="block font-medium text-slate-700 mb-1">Vehicle *</label>
-              <select v-model="newTrip.vehicle" class="w-full px-3 py-2 border rounded-md border-slate-300">
-                <option value="Isuzu Forward 6-Wheeler (CAE-8921)">Isuzu Forward 6-Wheeler (CAE-8921)</option>
-                <option value="Isuzu Elf Dropside (GCC-4512)">Isuzu Elf Dropside (GCC-4512)</option>
-                <option value="Mitsubishi Canter Van (YAA-3390)">Mitsubishi Canter Van (YAA-3390)</option>
-              </select>
+              <input v-model="newTrip.vehicle" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Vehicle and plate number" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block font-medium text-slate-700 mb-1">Driver *</label>
-              <input v-model="newTrip.driver" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Pedro Cruz" />
+              <input v-model="newTrip.driver" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Driver name" />
             </div>
             <div>
               <label class="block font-medium text-slate-700 mb-1">Driver Assistant / Helper</label>
-              <input v-model="newTrip.assistant" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Juan Dela Cruz" />
+              <input v-model="newTrip.assistant" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Assistant name" />
             </div>
           </div>
 
@@ -150,11 +142,11 @@
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-amber-900 font-medium mb-1">Gas / Diesel (PHP) *</label>
-                <input v-model.number="newTrip.gasExpense" type="number" required class="w-full px-3 py-1.5 border rounded border-amber-300 bg-white font-mono font-bold" />
+                <input v-model.number="newTrip.gasExpense" type="number" min="0" required class="w-full px-3 py-1.5 border rounded border-amber-300 bg-white font-mono font-bold" />
               </div>
               <div>
                 <label class="block text-amber-900 font-medium mb-1">Toll / Parking (PHP)</label>
-                <input v-model.number="newTrip.tollExpense" type="number" class="w-full px-3 py-1.5 border rounded border-amber-300 bg-white font-mono" />
+                <input v-model.number="newTrip.tollExpense" type="number" min="0" class="w-full px-3 py-1.5 border rounded border-amber-300 bg-white font-mono" />
               </div>
             </div>
           </div>
@@ -163,7 +155,7 @@
             <label class="block font-medium text-slate-700 mb-1">Assign DRs to this trip</label>
             <div class="space-y-1.5 max-h-36 overflow-y-auto border border-slate-200 p-2 rounded-md">
               <label
-                v-for="dr in deliveryStore.deliveryReceipts"
+                v-for="dr in availableReceipts"
                 :key="dr.id"
                 class="flex items-center gap-2 p-1 hover:bg-slate-50 rounded cursor-pointer"
               >
@@ -181,35 +173,42 @@
 
           <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
             <button type="button" @click="showCreateTripModal = false" class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-md">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-slate-900 text-white font-bold rounded-md hover:bg-slate-800 shadow-sm">
+            <button type="submit" :disabled="newTrip.drNumbers.length === 0" class="primary-button">
               Save Trip & Auto-Log Expense
             </button>
           </div>
         </form>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Plus, Truck, Fuel, CheckCircle2, ArrowRight, X } from 'lucide-vue-next'
 import { useDeliveryStore } from '@/stores/deliveryStore'
 
 const deliveryStore = useDeliveryStore()
+const availableReceipts = computed(() => deliveryStore.deliveryReceipts.filter(receipt => !receipt.tripId))
 
 const showCreateTripModal = ref(false)
 const newTrip = ref({
   date: new Date().toISOString().split('T')[0],
-  vehicle: 'Isuzu Elf Dropside (GCC-4512)',
-  driver: 'Pedro Cruz',
-  assistant: 'Mark Bautista',
-  gasExpense: 2500,
+  vehicle: '',
+  driver: '',
+  assistant: '',
+  gasExpense: 0,
   tollExpense: 0,
   otherExpense: 0,
-  drNumbers: ['DR #4330'],
+  drNumbers: [],
   notes: ''
 })
+
+function openCreateTripModal() {
+  if (availableReceipts.value.length === 0) return
+  showCreateTripModal.value = true
+}
 
 function getDrCustomer(drNum) {
   const dr = deliveryStore.deliveryReceipts.find(d => d.drNumber === drNum)
@@ -222,14 +221,15 @@ function getDrLink(drNum) {
 }
 
 function handleCreateTrip() {
+  if (newTrip.value.drNumbers.length === 0) return
   deliveryStore.createDeliveryTrip(newTrip.value)
   showCreateTripModal.value = false
   newTrip.value = {
     date: new Date().toISOString().split('T')[0],
-    vehicle: 'Isuzu Elf Dropside (GCC-4512)',
-    driver: 'Pedro Cruz',
+    vehicle: '',
+    driver: '',
     assistant: '',
-    gasExpense: 2500,
+    gasExpense: 0,
     tollExpense: 0,
     otherExpense: 0,
     drNumbers: [],
@@ -237,4 +237,3 @@ function handleCreateTrip() {
   }
 }
 </script>
-

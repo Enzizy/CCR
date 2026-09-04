@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Accounts Receivable (A/R) Aging</h2>
+        <h2 class="page-title">Accounts Receivable (A/R) Aging</h2>
       </div>
 
       <div class="text-right text-xs bg-white border border-slate-200/80 px-4 py-2 rounded-xl shadow-xs">
@@ -47,6 +47,10 @@
 
     <!-- Customer Balances & Breakdown -->
     <div class="space-y-6">
+      <div v-if="billingStore.customerReceivables.length === 0" class="section-card empty-state">
+        <h3>No receivables yet</h3>
+        <p>Customer balances will appear after a billable delivery generates an SOA.</p>
+      </div>
       <div
         v-for="cust in billingStore.customerReceivables"
         :key="cust.customerId"
@@ -69,9 +73,9 @@
         </div>
 
         <!-- SOAs for this Customer -->
-        <table class="w-full text-left text-xs border-collapse">
+        <table class="data-table">
           <thead>
-            <tr class="bg-slate-50/40 border-b border-slate-100 text-slate-400 font-medium uppercase text-[11px] tracking-wider">
+            <tr class="data-table-header">
               <th class="py-2.5 px-6">SOA Reference</th>
               <th class="py-2.5 px-4">Billing Date</th>
               <th class="py-2.5 px-4">Due Date</th>
@@ -109,4 +113,3 @@ import { useBillingStore } from '@/stores/billingStore'
 
 const billingStore = useBillingStore()
 </script>
-

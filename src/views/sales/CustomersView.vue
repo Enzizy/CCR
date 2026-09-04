@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-base font-semibold text-slate-900 tracking-tight">Customer Accounts</h2>
+        <h2 class="page-title">Customer Accounts</h2>
       </div>
       <button
         @click="showAddModal = true"
@@ -16,6 +16,10 @@
 
     <!-- Customer Cards / Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div v-if="salesStore.customers.length === 0" class="section-card empty-state md:col-span-2">
+        <h3>No customers yet</h3>
+        <p>Add the first customer before creating a purchase order.</p>
+      </div>
       <div
         v-for="c in salesStore.customers"
         :key="c.id"
@@ -70,6 +74,7 @@
     </div>
 
     <!-- Add Customer Modal -->
+    <Teleport to="body">
     <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -135,6 +140,7 @@
         </form>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
@@ -181,4 +187,3 @@ function handleAddCustomer() {
   }
 }
 </script>
-

@@ -1,16 +1,5 @@
 <template>
   <div>
-    <!-- Floating Trigger Button -->
-    <button
-      v-if="!assistantStore.isOpen"
-      @click="assistantStore.openAssistant"
-      class="fixed bottom-6 right-6 z-40 bg-slate-900 text-white p-3.5 rounded-full shadow-lg hover:bg-slate-800 transition-all flex items-center gap-2 border border-slate-700 hover:scale-105"
-      title="Open AI Business Assistant"
-    >
-      <Bot class="w-5 h-5 text-brand-400" />
-      <span class="text-xs font-semibold pr-1">Ask AI Assistant</span>
-    </button>
-
     <!-- Slide-out Drawer Container -->
     <div
       v-if="assistantStore.isOpen"
@@ -25,7 +14,7 @@
           <div>
             <h2 class="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
               CCR Business Assistant
-              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Gemini</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-200 border border-brand-400/30">Preview</span>
             </h2>
           </div>
         </div>
@@ -124,7 +113,7 @@ const inputQuery = ref('')
 const messagesContainer = ref(null)
 
 const suggestedPrompts = [
-  'How much do Cebu Landmaster Inc. owe us?',
+  'How much do customers owe us?',
   'What SOAs are due soon?',
   'What did we spend on gas?',
   'Record ₱2,500 gas today'
@@ -157,10 +146,15 @@ watch(() => assistantStore.messages.length, () => {
 
 function formatMessage(text) {
   if (!text) return ''
-  // Basic markdown bold conversion for display
-  return text
+  const escapedText = text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  return escapedText
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br/>')
 }
 </script>
-
