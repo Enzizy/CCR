@@ -139,10 +139,10 @@
       <!-- Prepared By -->
       <div>
         <div class="h-12 flex items-end justify-center font-medium italic text-black">
-          Rodil B. Vergara
+          Authorized Staff
         </div>
         <div class="border-t-2 border-black pt-1.5 text-center">
-          <div class="font-bold text-black uppercase">RODIL B. VERGARA</div>
+          <div class="font-bold text-black uppercase">AUTHORIZED STAFF</div>
           <div class="text-[10px] text-slate-600 font-bold uppercase">PREPARED BY</div>
         </div>
       </div>

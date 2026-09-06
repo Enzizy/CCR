@@ -39,7 +39,7 @@
           <input v-model="company.phone" class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" />
         </div>
         <div>
-          <label class="block font-medium text-slate-700 mb-1">Accounting Email</label>
+          <label class="block font-medium text-slate-700 mb-1">Official / Accounting Email</label>
           <input v-model="company.email" class="w-full px-3 py-2 border rounded-md border-slate-300" />
         </div>
         <div>

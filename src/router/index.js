@@ -89,6 +89,12 @@ const routes = [
     ]
   },
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/auth/LoginView.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/'
   }
@@ -99,6 +105,21 @@ const router = createRouter({
   routes,
   scrollBehavior() {
     return { top: 0 }
+  }
+})
+
+// Authentication navigation guard
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('ccr_token')
+  const user = localStorage.getItem('ccr_user')
+  const isAuthenticated = Boolean(token && user)
+
+  if (!to.meta.public && !isAuthenticated) {
+    next({ name: 'Login', query: { redirect: to.fullPath } })
+  } else if (to.name === 'Login' && isAuthenticated) {
+    next({ path: '/' })
+  } else {
+    next()
   }
 })
 

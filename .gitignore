@@ -2,8 +2,11 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
 .env.local
 .env.*.local
+data/*.db
+data/
 
 # Logs
 npm-debug.log*

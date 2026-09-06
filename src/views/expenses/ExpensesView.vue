@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="page-title">Centralized Business Expenses</h2>
+        <h2 class="page-title">Business Expenses</h2>
       </div>
 
       <button
@@ -63,9 +63,8 @@
           <tr class="data-table-header">
             <th class="py-3 px-5 w-28">Date</th>
             <th class="py-3 px-4 w-36">Category</th>
+            <th class="py-3 px-4 w-44">Item / Material</th>
             <th class="py-3 px-4">Description</th>
-            <th class="py-3 px-4">Supplier / Payee</th>
-            <th class="py-3 px-4 w-32">Source</th>
             <th class="py-3 px-5 text-right">Amount</th>
           </tr>
         </thead>
@@ -75,50 +74,39 @@
             :key="e.id"
             class="hover:bg-slate-50/50 transition-colors"
           >
-            <td class="py-3.5 px-5 font-mono text-slate-500">{{ e.date }}</td>
+            <td class="py-3.5 px-5 font-mono text-slate-500 text-xs">{{ e.date }}</td>
             <td class="py-3.5 px-4">
-              <span class="font-medium text-slate-900">{{ e.category }}</span>
-              <div class="text-[11px] text-slate-400 font-normal">{{ e.subCategory }}</div>
-            </td>
-            <td class="py-3.5 px-4">
-              <div class="font-medium text-slate-900">{{ e.description }}</div>
-              <div v-if="e.notes" class="text-[11px] text-slate-400 italic mt-0.5">{{ e.notes }}</div>
-            </td>
-            <td class="py-3.5 px-4 text-slate-700">
-              <div>{{ e.supplier }}</div>
-              <div class="text-[11px] text-slate-400 font-mono">{{ e.paymentMethod }} • {{ e.receiptNo }}</div>
-            </td>
-            <td class="py-3.5 px-4">
+              <span class="font-semibold text-slate-900">{{ e.category }}</span>
               <span
                 v-if="e.sourceType === 'DELIVERY_TRIP'"
-                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70"
+                class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70"
               >
-                <Truck class="w-3 h-3" /> Trip Auto
+                Trip
               </span>
               <span
                 v-else-if="e.sourceType === 'PAYROLL'"
-                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-sky-50 text-sky-800 border border-sky-200/70"
+                class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-50 text-sky-800 border border-sky-200/70"
               >
-                <Banknote class="w-3 h-3" /> Payroll
-              </span>
-              <span
-                v-else
-                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600"
-              >
-                Manual
+                Payroll
               </span>
             </td>
-            <td class="py-3.5 px-5 text-right font-mono font-medium text-slate-900">
-              ₱{{ e.amount.toLocaleString() }}
+            <td class="py-3.5 px-4 font-medium text-slate-800">
+              {{ e.subCategory || '—' }}
+            </td>
+            <td class="py-3.5 px-4 text-slate-600">
+              {{ e.description }}
+            </td>
+            <td class="py-3.5 px-5 text-right font-mono font-bold text-slate-900">
+              ₱{{ Number(e.amount || 0).toLocaleString() }}
             </td>
           </tr>
           <tr v-if="filteredExpenses.length === 0">
-            <td colspan="6" class="py-12 text-center text-xs text-slate-500">No expenses match this view.</td>
+            <td colspan="5" class="py-12 text-center text-xs text-slate-500">No expenses match this view.</td>
           </tr>
         </tbody>
         <tfoot>
           <tr class="bg-slate-50/60 font-medium border-t border-slate-200">
-            <td colspan="5" class="py-3 px-5 text-slate-500 uppercase tracking-wider text-[11px]">
+            <td colspan="4" class="py-3 px-5 text-slate-500 uppercase tracking-wider text-[11px]">
               Total Displayed Expenses
             </td>
             <td class="py-3 px-5 text-right font-mono font-semibold text-slate-900">
@@ -132,9 +120,9 @@
     <!-- Fast Log Expense Modal -->
     <Teleport to="body">
     <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4">
+      <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
-          <h3 class="text-sm font-bold text-slate-900">Log Central Business Expense</h3>
+          <h3 class="text-sm font-bold text-slate-900">Record Business Expense</h3>
           <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-700">
             <X class="w-4 h-4" />
           </button>
@@ -144,57 +132,33 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block font-medium text-slate-700 mb-1">Expense Date *</label>
-              <input v-model="newExpense.date" type="date" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" />
+              <input v-model="newExpense.date" type="date" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono focus:ring-1 focus:ring-brand-500" />
             </div>
             <div>
               <label class="block font-medium text-slate-700 mb-1">Amount (PHP) *</label>
-              <input v-model.number="newExpense.amount" type="number" min="1" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono font-bold text-slate-950" placeholder="25000" />
+              <input v-model.number="newExpense.amount" type="number" min="1" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono font-bold text-slate-950 focus:ring-1 focus:ring-brand-500" placeholder="0" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block font-medium text-slate-700 mb-1">Category *</label>
-              <select v-model="newExpense.category" required class="w-full px-3 py-2 border rounded-md border-slate-300">
+              <select v-model="newExpense.category" required class="w-full px-3 py-2 border rounded-md border-slate-300 focus:ring-1 focus:ring-brand-500">
                 <option v-for="cat in expenseStore.categories" :key="cat.id" :value="cat.name">{{ cat.name }}</option>
               </select>
             </div>
             <div>
-              <label class="block font-medium text-slate-700 mb-1">Subcategory / Line</label>
-              <input v-model="newExpense.subCategory" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Lumber, Nails, Toll..." />
+              <label class="block font-medium text-slate-700 mb-1">Specific Item / Material *</label>
+              <input v-model="newExpense.subCategory" list="expense-subcategories" required class="w-full px-3 py-2 border rounded-md border-slate-300 focus:ring-1 focus:ring-brand-500" placeholder="e.g. Lumber, Cement..." />
+              <datalist id="expense-subcategories">
+                <option v-for="sub in activeSubcategories" :key="sub" :value="sub" />
+              </datalist>
             </div>
           </div>
 
           <div>
-            <label class="block font-medium text-slate-700 mb-1">Description / Item Detail *</label>
-            <input v-model="newExpense.description" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. 50 bdft Kiln-dried Lumber" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">Supplier / Vendor</label>
-              <input v-model="newExpense.supplier" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="ABC Lumber / Shell" />
-            </div>
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">Payment Method</label>
-              <select v-model="newExpense.paymentMethod" class="w-full px-3 py-2 border rounded-md border-slate-300">
-                <option value="Cash">Cash</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-                <option value="Check">Check</option>
-                <option value="Online Banking">Online Banking</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">Receipt / Invoice No.</label>
-              <input v-model="newExpense.receiptNo" class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" placeholder="OR-1234 / SI-987" />
-            </div>
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">Notes (Optional)</label>
-              <input v-model="newExpense.notes" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Delivered to shop..." />
-            </div>
+            <label class="block font-medium text-slate-700 mb-1">Description *</label>
+            <textarea v-model="newExpense.description" rows="2" required class="w-full px-3 py-2 border rounded-md border-slate-300 focus:ring-1 focus:ring-brand-500" placeholder="e.g. 50 bdft Kiln-dried Lumber for warehouse..." />
           </div>
 
           <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
@@ -221,13 +185,14 @@ const showAddModal = ref(false)
 const newExpense = ref({
   date: new Date().toISOString().split('T')[0],
   category: 'Materials',
-  subCategory: 'Lumber',
+  subCategory: '',
   description: '',
-  amount: null,
-  supplier: '',
-  paymentMethod: 'Cash',
-  receiptNo: '',
-  notes: ''
+  amount: null
+})
+
+const activeSubcategories = computed(() => {
+  const cat = expenseStore.categories.find(c => c.name === newExpense.value.category)
+  return cat ? cat.subCategories : []
 })
 
 const filteredExpenses = computed(() => {
@@ -236,22 +201,24 @@ const filteredExpenses = computed(() => {
 })
 
 const totalFilteredExpenses = computed(() => {
-  return filteredExpenses.value.reduce((acc, e) => acc + e.amount, 0)
+  return filteredExpenses.value.reduce((acc, e) => acc + Number(e.amount || 0), 0)
 })
 
 function handleAddExpense() {
-  expenseStore.addExpense(newExpense.value)
+  expenseStore.addExpense({
+    date: newExpense.value.date,
+    category: newExpense.value.category,
+    subCategory: newExpense.value.subCategory || 'General',
+    description: newExpense.value.description,
+    amount: newExpense.value.amount
+  })
   showAddModal.value = false
   newExpense.value = {
     date: new Date().toISOString().split('T')[0],
     category: 'Materials',
-    subCategory: 'Lumber',
+    subCategory: '',
     description: '',
-    amount: null,
-    supplier: '',
-    paymentMethod: 'Cash',
-    receiptNo: '',
-    notes: ''
+    amount: null
   }
 }
 </script>

@@ -42,20 +42,20 @@
 
         <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50/60 p-3.5 rounded-lg border border-slate-100">
           <div>
-            <span class="text-slate-400 block text-[11px] font-medium">Contact Person</span>
-            <span class="font-medium text-slate-800">{{ c.contactPerson }}</span>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[11px] font-medium">Phone / Mobile</span>
-            <span class="font-mono text-slate-800">{{ c.phone }}</span>
-          </div>
-          <div>
             <span class="text-slate-400 block text-[11px] font-medium">Email</span>
-            <span class="text-slate-800">{{ c.email }}</span>
+            <span class="text-slate-800 truncate block">{{ c.email || '—' }}</span>
           </div>
           <div>
             <span class="text-slate-400 block text-[11px] font-medium">Payment Terms</span>
-            <span class="font-medium text-brand-700">{{ c.paymentTerms }}</span>
+            <span class="font-medium text-brand-700">{{ c.paymentTerms || '—' }}</span>
+          </div>
+          <div v-if="c.contactPerson">
+            <span class="text-slate-400 block text-[11px] font-medium">Contact Person</span>
+            <span class="font-medium text-slate-800">{{ c.contactPerson }}</span>
+          </div>
+          <div v-if="c.phone">
+            <span class="text-slate-400 block text-[11px] font-medium">Phone / Mobile</span>
+            <span class="font-mono text-slate-800">{{ c.phone }}</span>
           </div>
         </div>
 
@@ -85,35 +85,23 @@
         </div>
 
         <form @submit.prevent="handleAddCustomer" class="space-y-3">
-          <div>
-            <label class="block font-medium text-slate-700 mb-1">Company / Customer Name *</label>
-            <input v-model="newCust.name" required class="w-full px-3 py-2 border rounded-md border-slate-300 focus:ring-1 focus:ring-brand-500" placeholder="e.g. Primary Homes Inc." />
-          </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block font-medium text-slate-700 mb-1">Company / Customer Name *</label>
+              <input v-model="newCust.name" required class="w-full px-3 py-2 border rounded-md border-slate-300 focus:ring-1 focus:ring-brand-500" placeholder="e.g. Primary Homes Inc." />
+            </div>
             <div>
               <label class="block font-medium text-slate-700 mb-1">Short Name / Code</label>
               <input v-model="newCust.shortName" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. PHI" />
             </div>
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">TIN</label>
-              <input v-model="newCust.tin" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="000-000-000-000" />
-            </div>
           </div>
+
           <div>
             <label class="block font-medium text-slate-700 mb-1">Billing / Delivery Address</label>
             <input v-model="newCust.address" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Full street / city address" />
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">Contact Person</label>
-              <input v-model="newCust.contactPerson" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Procurement manager" />
-            </div>
-            <div>
-              <label class="block font-medium text-slate-700 mb-1">Phone Number</label>
-              <input v-model="newCust.phone" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="+63 32 ..." />
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block font-medium text-slate-700 mb-1">Email</label>
               <input v-model="newCust.email" type="email" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="procurement@company.ph" />
@@ -128,6 +116,7 @@
               </select>
             </div>
           </div>
+
           <div>
             <label class="block font-medium text-slate-700 mb-1">Notes / Instructions</label>
             <textarea v-model="newCust.notes" rows="2" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Site contact, delivery gate instructions..."></textarea>
@@ -157,10 +146,7 @@ const showAddModal = ref(false)
 const newCust = ref({
   name: '',
   shortName: '',
-  tin: '',
   address: '',
-  contactPerson: '',
-  phone: '',
   email: '',
   paymentTerms: '30 Days upon delivery',
   notes: ''
@@ -177,10 +163,7 @@ function handleAddCustomer() {
   newCust.value = {
     name: '',
     shortName: '',
-    tin: '',
     address: '',
-    contactPerson: '',
-    phone: '',
     email: '',
     paymentTerms: '30 Days upon delivery',
     notes: ''

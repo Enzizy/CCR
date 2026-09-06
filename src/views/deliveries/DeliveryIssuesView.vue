@@ -17,8 +17,10 @@
       </button>
     </div>
 
+    <p class="text-xs text-slate-500">Replacements get a separate DR with no charge or SOA. Replacing 2 of 50 delivered doors keeps the PO at 50 delivered.</p>
+    <p v-if="saveError" role="alert" class="text-sm text-rose-700">{{ saveError }}</p>
     <!-- Issues Table -->
-    <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
+    <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-x-auto">
       <table class="data-table">
         <thead>
           <tr class="data-table-header">
@@ -37,11 +39,11 @@
             :key="issue.id"
             class="hover:bg-slate-50/50 transition-colors"
           >
-            <td class="py-3.5 px-5 font-mono text-slate-500">{{ issue.dateReported }}</td>
-            <td class="py-3.5 px-4 font-mono font-medium text-slate-900">{{ issue.originalDrNumber }}</td>
+            <td class="py-3.5 px-5 font-mono text-slate-500">{{ issue.date }}</td>
+            <td class="py-3.5 px-4 font-mono font-medium text-slate-900">{{ issue.drNumber }}</td>
             <td class="py-3.5 px-4 font-medium text-slate-900">{{ issue.customerName }}</td>
             <td class="py-3.5 px-4">
-              <span class="font-mono font-medium text-rose-700">{{ issue.quantityAffected }} set(s)</span>
+              <span class="font-mono font-medium text-rose-700">{{ issue.quantity }} set(s)</span>
               <div class="text-slate-500 text-[11px] mt-0.5">{{ issue.productName }}</div>
             </td>
             <td class="py-3.5 px-4 text-slate-600 max-w-xs">
@@ -55,7 +57,7 @@
                 {{ issue.replacementDrNumber }}
               </span>
               <button
-                v-else
+                v-else-if="isOpenIssue(issue)"
                 @click="openReplacementModal(issue)"
                 class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100/80 rounded-md border border-purple-200/70 transition-colors shadow-xs"
               >
@@ -108,8 +110,8 @@
               <label class="block font-medium text-slate-700 mb-1">Damaged Item *</label>
               <select v-model="newIssue.productName" required class="w-full px-3 py-2 border rounded-md border-slate-300">
                 <option disabled value="">Select a delivered item</option>
-                <option v-for="item in selectedReceipt?.items || []" :key="item.productId || item.name" :value="item.name">
-                  {{ item.name }} ({{ item.quantity }} {{ item.unit || 'unit' }})
+                <option v-for="item in selectedReceipt?.items || []" :key="item.productId || item.name" :value="item.name || item.productName">
+                  {{ item.name || item.productName }} ({{ item.quantity }} {{ item.unit || 'unit' }})
                 </option>
               </select>
             </div>
@@ -132,25 +134,97 @@
       </div>
     </div>
     </Teleport>
+
+    <!-- Dispatch Replacement Review Modal -->
+    <Teleport to="body">
+      <div v-if="showReplacementModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Dispatch Warranty Replacement</h3>
+              <p class="text-slate-500 mt-0.5">Review replacement items and assign logistics personnel before issuing replacement DR.</p>
+            </div>
+            <button @click="showReplacementModal = false" class="text-slate-400 hover:text-slate-700">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <div v-if="selectedIssue" class="p-3.5 bg-purple-50/70 border border-purple-200 rounded-lg space-y-2">
+            <div class="flex justify-between">
+              <span class="text-purple-900 font-medium">Customer:</span>
+              <strong class="text-purple-950">{{ selectedIssue.customerName }}</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-purple-900 font-medium">Original Delivery:</span>
+              <span class="font-mono text-purple-950 font-bold">{{ selectedIssue.drNumber }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-purple-900 font-medium">Replacement Item:</span>
+              <span class="font-medium text-purple-950">{{ selectedIssue.productName }} ({{ selectedIssue.quantity }} set)</span>
+            </div>
+            <div class="text-[11px] text-purple-800 border-t border-purple-200/80 pt-1.5 flex items-center gap-1.5">
+              <CheckCircle2 class="w-3.5 h-3.5 shrink-0 text-purple-700" />
+              <span>Free warranty replacement (₱0.00 billable). Will NOT affect PO remaining quantities.</span>
+            </div>
+          </div>
+
+          <form @submit.prevent="confirmReplacementDispatch" class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-medium text-slate-700 mb-1">Dispatch Date *</label>
+                <input v-model="replacementForm.date" type="date" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" />
+              </div>
+              <div>
+                <label class="block font-medium text-slate-700 mb-1">Assigned Logistics Driver</label>
+                <input v-model="replacementForm.deliveredBy" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Pedro Cruz (Isuzu Elf)" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Receiving Staging / Personnel Notes</label>
+              <input v-model="replacementForm.receivedBy" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Site Engineer / For client signature upon drop-off" />
+            </div>
+
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Replacement Instructions / Remarks</label>
+              <textarea v-model="replacementForm.notes" rows="2" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Bring replacement items directly to building B loading dock"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+              <button type="button" @click="showReplacementModal = false" class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-md">Cancel</button>
+              <button type="submit" :disabled="saving" class="px-4 py-2 bg-purple-700 text-white font-bold rounded-md hover:bg-purple-800 shadow-sm">
+                {{ saving ? 'Saving replacement...' : 'Dispatch Replacement DR' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Plus, X } from 'lucide-vue-next'
+import { Plus, X, CheckCircle2 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import { isOpenIssue } from '@/lib/orderTracking'
 import { useDeliveryStore } from '@/stores/deliveryStore'
 
 const deliveryStore = useDeliveryStore()
+const saving = ref(false)
+const saveError = ref('')
 
 const standardReceipts = computed(() => {
   return deliveryStore.deliveryReceipts.filter(r => !r.isReplacement)
 })
 
 const selectedReceipt = computed(() => standardReceipts.value.find(receipt => receipt.drNumber === newIssue.value.originalDrNumber))
-const selectedItem = computed(() => selectedReceipt.value?.items?.find(item => item.name === newIssue.value.productName))
+const selectedItem = computed(() => selectedReceipt.value?.items?.find(item => (item.name || item.productName) === newIssue.value.productName))
 
 const showReportModal = ref(false)
+const showReplacementModal = ref(false)
+const selectedIssue = ref(null)
+
 const newIssue = ref({
   dateReported: new Date().toISOString().split('T')[0],
   originalDrNumber: '',
@@ -161,6 +235,13 @@ const newIssue = ref({
   reason: ''
 })
 
+const replacementForm = ref({
+  date: new Date().toISOString().split('T')[0],
+  deliveredBy: '',
+  receivedBy: 'Pending Client Signature',
+  notes: ''
+})
+
 function onDrSelect() {
   const dr = deliveryStore.deliveryReceipts.find(d => d.drNumber === newIssue.value.originalDrNumber)
   if (dr) {
@@ -169,7 +250,7 @@ function onDrSelect() {
     newIssue.value.productName = ''
     newIssue.value.quantityAffected = 1
     if (dr.items && dr.items.length > 0) {
-      newIssue.value.productName = dr.items[0].name
+      newIssue.value.productName = (dr.items[0].name || dr.items[0].productName)
     }
   }
 }
@@ -179,9 +260,9 @@ function openReportModal() {
   showReportModal.value = true
 }
 
-function handleReportDamage() {
+async function handleReportDamage() {
   if (!selectedReceipt.value || !selectedItem.value || newIssue.value.quantityAffected > selectedItem.value.quantity) return
-  deliveryStore.reportDeliveryDamage(newIssue.value)
+  await deliveryStore.reportDeliveryDamage({ ...newIssue.value, poId: selectedReceipt.value.poId, productId: selectedItem.value.productId, unit: selectedItem.value.unit })
   showReportModal.value = false
   newIssue.value = {
     dateReported: new Date().toISOString().split('T')[0],
@@ -195,27 +276,47 @@ function handleReportDamage() {
 }
 
 function openReplacementModal(issue) {
-  // Directly dispatch a replacement DR
-  const repDr = deliveryStore.createDelivery({
+  selectedIssue.value = issue
+  replacementForm.value = {
     date: new Date().toISOString().split('T')[0],
-    isReplacement: true,
-    originalDrNumber: issue.originalDrNumber,
-    replacementReason: `Free warranty replacement for: ${issue.reason}`,
-    customerId: issue.customerId,
-    customerName: issue.customerName,
-    project: 'Warranty Replacement',
     deliveredBy: '',
     receivedBy: 'Pending Client Signature',
+    notes: ''
+  }
+  showReplacementModal.value = true
+}
+
+async function confirmReplacementDispatch() {
+  if (!selectedIssue.value || saving.value || !isOpenIssue(selectedIssue.value)) return
+  saving.value = true
+  saveError.value = ''
+  try {
+
+  const repDr = await deliveryStore.createDelivery({
+    date: replacementForm.value.date,
+    isReplacement: true,
+    poId: selectedIssue.value.poId,
+    originalDrNumber: selectedIssue.value.drNumber,
+    notes: `Free warranty replacement for: ${selectedIssue.value.reason}${replacementForm.value.notes ? ' — ' + replacementForm.value.notes : ''}`,
+    customerId: selectedIssue.value.customerId,
+    customerName: selectedIssue.value.customerName,
+    project: 'Warranty Replacement',
+    deliveredBy: replacementForm.value.deliveredBy,
+    receivedBy: replacementForm.value.receivedBy,
     items: [
       {
-        name: issue.productName,
-        quantity: issue.quantityAffected,
+        productId: selectedIssue.value.productId,
+        name: selectedIssue.value.productName,
+        quantity: selectedIssue.value.quantity,
         unit: 'set',
         unitPrice: 0
       }
     ]
   })
 
-  deliveryStore.resolveIssueWithReplacement(issue.id, repDr)
+  await deliveryStore.resolveIssueWithReplacement(selectedIssue.value.id, repDr)
+  showReplacementModal.value = false
+  } catch (error) { saveError.value = error.message; showReplacementModal.value = false }
+  finally { saving.value = false }
 }
 </script>

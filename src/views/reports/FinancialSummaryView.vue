@@ -1,111 +1,164 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h2 class="page-title">Financial Performance & Cash Flow</h2>
+        <h2 class="page-title">Monthly Financial Summary</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Overview of cash collections, operational expenses, and deliveries.</p>
       </div>
 
       <div class="flex items-center gap-2">
-        <span class="text-xs font-medium text-slate-500">Fiscal Period:</span>
-        <select v-model="selectedPeriod" class="text-xs border rounded-lg px-3 py-1.5 bg-white border-slate-200 font-medium text-slate-700 shadow-xs">
+        <span class="text-xs font-medium text-slate-500">Period:</span>
+        <select v-model="selectedPeriod" class="text-xs border rounded-lg px-3 py-2 bg-white border-slate-200 font-medium text-slate-800 shadow-xs focus:ring-1 focus:ring-brand-500">
           <option v-for="period in periodOptions" :key="period.value" :value="period.value">{{ period.label }}</option>
         </select>
       </div>
     </div>
 
-    <!-- Core Financial Formula Banner -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="p-5 bg-white border border-slate-200/80 rounded-xl shadow-xs">
-        <div class="text-xs font-medium text-slate-500">Operating Accrual Profit</div>
-        <div class="mt-3 flex items-center justify-between text-xs">
-          <div>
-            <div class="text-slate-400 text-[11px]">Delivered Revenue</div>
-            <div class="font-mono font-semibold text-slate-900 text-sm mt-0.5">₱{{ periodRevenue.toLocaleString() }}</div>
-          </div>
-          <span class="text-sm text-slate-300 font-normal">-</span>
-          <div>
-            <div class="text-slate-400 text-[11px]">Central Expenses</div>
-            <div class="font-mono font-semibold text-slate-700 text-sm mt-0.5">₱{{ periodExpenses.toLocaleString() }}</div>
-          </div>
-          <span class="text-sm text-slate-300 font-normal">=</span>
-          <div>
-            <div class="text-slate-400 text-[11px]">Operating Profit</div>
-            <div class="font-mono font-semibold text-emerald-700 text-sm mt-0.5">₱{{ operatingProfit.toLocaleString() }}</div>
-          </div>
+    <!-- 4 Key Numbers -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Cash In -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">Cash In (Collections)</span>
+          <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+            <ArrowDownLeft class="w-4 h-4" />
+          </span>
         </div>
+        <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-emerald-600">
+          ₱{{ periodCollections.toLocaleString() }}
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Payments collected this month</p>
       </div>
 
-      <div class="p-5 bg-white border border-slate-200/80 rounded-xl shadow-xs">
-        <div class="text-xs font-medium text-slate-500">Cash Flow Liquidity</div>
-        <div class="mt-3 flex items-center justify-between text-xs">
-          <div>
-            <div class="text-slate-400 text-[11px]">Cash Collected</div>
-            <div class="font-mono font-semibold text-emerald-700 text-sm mt-0.5">₱{{ periodCollections.toLocaleString() }}</div>
-          </div>
-          <span class="text-sm text-slate-300 font-normal">-</span>
-          <div>
-            <div class="text-slate-400 text-[11px]">Cash Disbursed</div>
-            <div class="font-mono font-semibold text-slate-700 text-sm mt-0.5">₱{{ periodExpenses.toLocaleString() }}</div>
-          </div>
-          <span class="text-sm text-slate-300 font-normal">=</span>
-          <div>
-            <div class="text-slate-400 text-[11px]">Net Cash Balance</div>
-            <div class="font-mono font-semibold text-sm mt-0.5" :class="netCash >= 0 ? 'text-brand-800' : 'text-rose-700'">
-              ₱{{ netCash.toLocaleString() }}
-            </div>
-          </div>
+      <!-- Cash Out -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">Cash Out (Expenses)</span>
+          <span class="p-1.5 rounded-lg bg-rose-50 text-rose-600">
+            <ArrowUpRight class="w-4 h-4" />
+          </span>
         </div>
+        <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-slate-900">
+          ₱{{ periodExpenses.toLocaleString() }}
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Total operating expenses spent</p>
+      </div>
+
+      <!-- Net Cash -->
+      <div class="bg-white p-5 rounded-xl border shadow-xs" :class="netCash >= 0 ? 'border-brand-200/80 bg-brand-50/20' : 'border-rose-200/80 bg-rose-50/20'">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium" :class="netCash >= 0 ? 'text-brand-900' : 'text-rose-900'">Net Cash Generated</span>
+          <span class="p-1.5 rounded-lg" :class="netCash >= 0 ? 'bg-brand-100 text-brand-700' : 'bg-rose-100 text-rose-700'">
+            <Wallet class="w-4 h-4" />
+          </span>
+        </div>
+        <div class="mt-2 text-2xl font-bold font-mono tracking-tight" :class="netCash >= 0 ? 'text-brand-900' : 'text-rose-700'">
+          ₱{{ netCash.toLocaleString() }}
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Cash In minus Cash Out</p>
+      </div>
+
+      <!-- Delivered Sales -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">Delivered Orders</span>
+          <span class="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+            <Truck class="w-4 h-4" />
+          </span>
+        </div>
+        <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-slate-900">
+          ₱{{ periodRevenue.toLocaleString() }}
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Total goods delivered to clients</p>
       </div>
     </div>
 
-    <!-- Expense Category Breakdown Table -->
-    <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100">
-        <h3 class="text-sm font-semibold text-slate-900">Monthly Operating Expense Allocation</h3>
+    <!-- Details Section: Expense Breakdown + Cash Summary -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Expense Breakdown (Takes 2 cols) -->
+      <div class="lg:col-span-2 bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-slate-900">Where Money Went (Expenses)</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Categorized breakdown for this month</p>
+          </div>
+          <span class="text-xs font-mono font-bold text-slate-900">
+            Total: ₱{{ periodExpenses.toLocaleString() }}
+          </span>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr class="data-table-header">
+              <th class="py-3 px-6">Expense Category</th>
+              <th class="py-3 px-4 w-44">Share</th>
+              <th class="py-3 px-6 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-700">
+            <tr v-for="item in periodCategoryBreakdown" :key="item.category" class="hover:bg-slate-50/50 transition-colors">
+              <td class="py-3.5 px-6 font-medium text-slate-900">{{ item.category }}</td>
+              <td class="py-3.5 px-4">
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div class="h-full bg-brand-600 rounded-full" :style="{ width: item.percent + '%' }"></div>
+                  </div>
+                  <span class="font-mono text-[11px] text-slate-400">{{ item.percent }}%</span>
+                </div>
+              </td>
+              <td class="py-3.5 px-6 text-right font-mono font-medium text-slate-900">₱{{ item.amount.toLocaleString() }}</td>
+            </tr>
+            <tr v-if="periodCategoryBreakdown.length === 0">
+              <td colspan="3" class="py-12 text-center text-xs text-slate-400">
+                No expenses recorded for this month.
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <table class="data-table">
-        <thead>
-          <tr class="data-table-header">
-            <th class="py-3 px-6">Expense Category</th>
-            <th class="py-3 px-4 w-48">Share of Total</th>
-            <th class="py-3 px-6 text-right">Amount</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 text-slate-700">
-          <tr v-for="item in periodCategoryBreakdown" :key="item.category" class="hover:bg-slate-50/50 transition-colors">
-            <td class="py-3.5 px-6 font-medium text-slate-900">{{ item.category }}</td>
-            <td class="py-3.5 px-4">
-              <div class="flex items-center gap-2">
-                <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                  <div class="h-full bg-brand-600 rounded-full" :style="{ width: item.percent + '%' }"></div>
-                </div>
-                <span class="font-mono text-[11px] text-slate-400">{{ item.percent }}%</span>
-              </div>
-            </td>
-            <td class="py-3.5 px-6 text-right font-mono font-medium text-slate-900">₱{{ item.amount.toLocaleString() }}</td>
-          </tr>
-          <tr v-if="periodCategoryBreakdown.length === 0">
-            <td colspan="3" class="py-12 text-center text-xs text-slate-500">No expenses recorded for this period.</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr class="bg-slate-50/60 font-medium border-t border-slate-200">
-            <td class="py-3 px-6 text-slate-500 uppercase tracking-wider text-[11px]">Total Consolidated Expenses</td>
-            <td></td>
-            <td class="py-3 px-6 text-right font-mono font-semibold text-slate-900">
-              ₱{{ periodExpenses.toLocaleString() }}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+      <!-- Quick Summary Card (Takes 1 col) -->
+      <div class="bg-white border border-slate-200/80 rounded-xl p-6 shadow-xs flex flex-col justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">Monthly Cash Flow</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">Summary for selected month</p>
+
+          <div class="mt-5 space-y-3 text-xs">
+            <div class="flex items-center justify-between py-2 border-b border-slate-100">
+              <span class="text-slate-600">Cash Received</span>
+              <span class="font-mono font-semibold text-emerald-600">+₱{{ periodCollections.toLocaleString() }}</span>
+            </div>
+            <div class="flex items-center justify-between py-2 border-b border-slate-100">
+              <span class="text-slate-600">Expenses Paid</span>
+              <span class="font-mono font-semibold text-rose-600">-₱{{ periodExpenses.toLocaleString() }}</span>
+            </div>
+            <div class="flex items-center justify-between pt-2">
+              <span class="font-bold text-slate-900">Net Cash</span>
+              <span class="font-mono font-bold text-base" :class="netCash >= 0 ? 'text-brand-900' : 'text-rose-600'">
+                ₱{{ netCash.toLocaleString() }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-100 bg-slate-50/70 p-3.5 rounded-lg text-xs space-y-1">
+          <div class="flex items-center justify-between text-slate-500 text-[11px]">
+            <span>Delivered Orders:</span>
+            <span class="font-mono font-medium text-slate-800">₱{{ periodRevenue.toLocaleString() }}</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-tight">
+            Customer deliveries are collected based on terms (e.g. 15-30 days).
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
+import { ArrowDownLeft, ArrowUpRight, Wallet, Truck } from 'lucide-vue-next'
 import { useDeliveryStore } from '@/stores/deliveryStore'
 import { useBillingStore } from '@/stores/billingStore'
 import { useExpenseStore } from '@/stores/expenseStore'
@@ -153,10 +206,6 @@ const periodCategoryBreakdown = computed(() => {
     amount,
     percent: Math.round((amount / (periodExpenses.value || 1)) * 100)
   })).sort((a, b) => b.amount - a.amount)
-})
-
-const operatingProfit = computed(() => {
-  return periodRevenue.value - periodExpenses.value
 })
 
 const netCash = computed(() => {

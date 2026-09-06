@@ -4,12 +4,11 @@
     <div class="flex items-center justify-between">
       <div>
         <h2 class="page-title">Delivery Trips & Manifest</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Plan truck dispatch runs, bundle multiple customer drop-offs, and automatically track vehicle fuel expenses.</p>
       </div>
 
       <button
         @click="openCreateTripModal"
-        :disabled="availableReceipts.length === 0"
-        :title="availableReceipts.length ? 'Dispatch delivery trip' : 'No unassigned delivery receipts'"
         class="primary-button"
       >
         <Plus class="w-4 h-4" />
@@ -21,7 +20,7 @@
     <div class="grid grid-cols-1 gap-6">
       <div v-if="deliveryStore.deliveryTrips.length === 0" class="section-card empty-state">
         <h3>No delivery trips yet</h3>
-        <p>Dispatch a trip after at least one delivery receipt has been created.</p>
+        <p>Dispatch or schedule a truck run. Trip fuel and toll expenses will automatically log into Central Expenses.</p>
       </div>
       <div
         v-for="trip in deliveryStore.deliveryTrips"
@@ -67,7 +66,7 @@
           <div class="text-xs font-medium text-slate-500 mb-3">
             Trip Delivery Manifest ({{ trip.drNumbers.length }} Client Deliveries)
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div v-if="trip.drNumbers.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div
               v-for="drNum in trip.drNumbers"
               :key="drNum"
@@ -89,6 +88,9 @@
               </router-link>
             </div>
           </div>
+          <div v-else class="p-4 bg-slate-50/50 rounded-lg border border-dashed border-slate-200 text-xs text-slate-500">
+            Planned trip ready. Deliveries can be assigned to this trip when created from Purchase Orders or Delivery Receipts.
+          </div>
 
           <div v-if="trip.notes" class="mt-4 text-xs text-slate-500 italic">
             Notes: {{ trip.notes }}
@@ -100,11 +102,11 @@
     <!-- Create Trip Modal -->
     <Teleport to="body">
     <div v-if="showCreateTripModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4">
+      <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-xs space-y-4 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
           <div>
             <h3 class="text-sm font-bold text-slate-900">Dispatch Delivery Trip</h3>
-            <p class="text-slate-500 mt-0.5">Enter trip details. Fuel will automatically be recorded as an expense.</p>
+            <p class="text-slate-500 mt-0.5">Enter trip details. Fuel and tolls will automatically be recorded into Central Expenses.</p>
           </div>
           <button @click="showCreateTripModal = false" class="text-slate-400 hover:text-slate-700">
             <X class="w-4 h-4" />
@@ -119,30 +121,30 @@
             </div>
             <div>
               <label class="block font-medium text-slate-700 mb-1">Vehicle *</label>
-              <input v-model="newTrip.vehicle" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Vehicle and plate number" />
+              <input v-model="newTrip.vehicle" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Isuzu Elf (Plate 234-XYZ)" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block font-medium text-slate-700 mb-1">Driver *</label>
-              <input v-model="newTrip.driver" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Driver name" />
+              <input v-model="newTrip.driver" required class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Pedro Cruz" />
             </div>
             <div>
               <label class="block font-medium text-slate-700 mb-1">Driver Assistant / Helper</label>
-              <input v-model="newTrip.assistant" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="Assistant name" />
+              <input v-model="newTrip.assistant" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Juan Santos" />
             </div>
           </div>
 
           <div class="p-3 bg-amber-50 rounded-lg border border-amber-200 space-y-2">
             <div class="font-bold text-amber-950 flex items-center gap-1.5">
               <Fuel class="w-4 h-4 text-amber-700" />
-              <span>Trip Operating Expenses (Auto-Logged)</span>
+              <span>Trip Operating Expenses (Auto-Logged into Central Expenses)</span>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-amber-900 font-medium mb-1">Gas / Diesel (PHP) *</label>
-                <input v-model.number="newTrip.gasExpense" type="number" min="0" required class="w-full px-3 py-1.5 border rounded border-amber-300 bg-white font-mono font-bold" />
+                <input v-model.number="newTrip.gasExpense" type="number" min="0" required class="w-full px-3 py-1.5 border rounded border-amber-300 bg-white font-mono font-bold text-slate-900" />
               </div>
               <div>
                 <label class="block text-amber-900 font-medium mb-1">Toll / Parking (PHP)</label>
@@ -152,8 +154,8 @@
           </div>
 
           <div>
-            <label class="block font-medium text-slate-700 mb-1">Assign DRs to this trip</label>
-            <div class="space-y-1.5 max-h-36 overflow-y-auto border border-slate-200 p-2 rounded-md">
+            <label class="block font-medium text-slate-700 mb-1">Assign Unassigned DRs to this trip (Optional)</label>
+            <div v-if="availableReceipts.length > 0" class="space-y-1.5 max-h-36 overflow-y-auto border border-slate-200 p-2 rounded-md">
               <label
                 v-for="dr in availableReceipts"
                 :key="dr.id"
@@ -164,6 +166,9 @@
                 <span class="text-slate-600">({{ dr.customerName }})</span>
               </label>
             </div>
+            <div v-else class="p-2.5 bg-slate-50 border border-slate-200 rounded-md text-[11px] text-slate-500">
+              No unassigned DRs right now. You can create this planned trip now and link deliveries to it when creating DRs.
+            </div>
           </div>
 
           <div>
@@ -173,8 +178,8 @@
 
           <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
             <button type="button" @click="showCreateTripModal = false" class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-md">Cancel</button>
-            <button type="submit" :disabled="newTrip.drNumbers.length === 0" class="primary-button">
-              Save Trip & Auto-Log Expense
+            <button type="submit" class="primary-button">
+              {{ newTrip.drNumbers.length > 0 ? `Dispatch Trip (${newTrip.drNumbers.length} DRs) & Auto-Log Fuel` : 'Save Planned Trip & Auto-Log Fuel' }}
             </button>
           </div>
         </form>
@@ -206,7 +211,17 @@ const newTrip = ref({
 })
 
 function openCreateTripModal() {
-  if (availableReceipts.value.length === 0) return
+  newTrip.value = {
+    date: new Date().toISOString().split('T')[0],
+    vehicle: '',
+    driver: '',
+    assistant: '',
+    gasExpense: 0,
+    tollExpense: 0,
+    otherExpense: 0,
+    drNumbers: [],
+    notes: ''
+  }
   showCreateTripModal.value = true
 }
 
@@ -221,19 +236,8 @@ function getDrLink(drNum) {
 }
 
 function handleCreateTrip() {
-  if (newTrip.value.drNumbers.length === 0) return
   deliveryStore.createDeliveryTrip(newTrip.value)
   showCreateTripModal.value = false
-  newTrip.value = {
-    date: new Date().toISOString().split('T')[0],
-    vehicle: '',
-    driver: '',
-    assistant: '',
-    gasExpense: 0,
-    tollExpense: 0,
-    otherExpense: 0,
-    drNumbers: [],
-    notes: ''
-  }
 }
 </script>
+

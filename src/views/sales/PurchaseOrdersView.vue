@@ -3,27 +3,42 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="page-title">Purchase Orders & Fulfillment</h2>
+        <h2 class="page-title">Customer Purchase Orders</h2>
+        <p class="text-xs text-slate-500 mt-1">Record POs received from customers. Track what remains to deliver and what remains unpaid.</p>
       </div>
       <button
         @click="openCreatePoModal"
-        :disabled="!canCreatePo"
-        :title="canCreatePo ? 'Create purchase order' : 'Add a customer and product first'"
         class="primary-button"
+        title="Create purchase order"
       >
         <Plus class="w-4 h-4" />
-        <span>New Purchase Order</span>
+        <span>Record Customer PO</span>
       </button>
     </div>
 
+    <div class="flex flex-wrap gap-3 items-end text-xs">
+      <label class="flex-1 min-w-48 text-slate-600">Find a customer PO<input v-model="search" type="search" placeholder="PO number, customer or project" class="mt-1 w-full border border-slate-300 rounded-md px-3 py-2" /></label>
+      <label class="text-slate-600">Show<select v-model="filter" class="mt-1 block border border-slate-300 rounded-md px-3 py-2"><option value="all">All customer POs</option><option value="delivery">Still to deliver</option><option value="unpaid">Unpaid SOAs</option><option value="replacement">Pending replacements</option></select></label>
+      <button v-if="route.query.po" @click="router.replace('/purchase-orders')" class="text-brand-800 underline py-2">Show all POs</button>
+    </div>
+    <p v-if="orders.length && !filteredOrders.length" class="text-sm text-slate-500 py-6">No customer POs match these filters.</p>
     <!-- PO List Cards -->
     <div class="space-y-6">
-      <div v-if="salesStore.enrichedPurchaseOrders.length === 0" class="section-card empty-state">
-        <h3>No purchase orders yet</h3>
-        <p>Purchase orders will appear here after the required customer and product records are ready.</p>
+      <div v-if="salesStore.enrichedPurchaseOrders.length === 0" class="section-card empty-state text-center py-12">
+        <h3 class="text-sm font-bold text-slate-800">No purchase orders yet</h3>
+        <p class="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
+          Record the PO number and items your customer ordered, then add each partial delivery against it.
+        </p>
+        <button
+          @click="openCreatePoModal"
+          class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-700 hover:bg-brand-800 rounded-lg shadow-xs transition-colors"
+        >
+          <Plus class="w-4 h-4" />
+          <span>Record First Customer PO</span>
+        </button>
       </div>
       <div
-        v-for="po in salesStore.enrichedPurchaseOrders"
+        v-for="po in filteredOrders"
         :key="po.id"
         class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden"
       >
@@ -118,6 +133,7 @@
             </tbody>
           </table>
         </div>
+        <OrderHistory :order="po" :expanded="route.query.po === po.id" />
       </div>
     </div>
 
@@ -136,6 +152,7 @@
         </div>
 
         <form @submit.prevent="handleCreateDelivery" class="space-y-4">
+          <p v-if="deliveryError" role="alert" class="text-rose-700">{{ deliveryError }}</p>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block font-medium text-slate-700 mb-1">Delivery Date *</label>
@@ -180,9 +197,20 @@
             </div>
           </div>
 
-          <div>
-            <label class="block font-medium text-slate-700 mb-1">Receiving Personnel / Staging Notes</label>
-            <input v-model="deliveryForm.receivedBy" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Site Engineer / Receiving Staging ramp" />
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Assign to Delivery Trip (Optional)</label>
+              <select v-model="deliveryForm.tripId" class="w-full px-3 py-2 border rounded-md border-slate-300">
+                <option :value="null">No trip assigned yet</option>
+                <option v-for="trip in deliveryStore.deliveryTrips" :key="trip.id" :value="trip.id">
+                  {{ trip.tripNumber }} — {{ trip.truckPlate }} (Driver: {{ trip.driverName }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Receiving Personnel / Staging Notes</label>
+              <input v-model="deliveryForm.receivedBy" class="w-full px-3 py-2 border rounded-md border-slate-300" placeholder="e.g. Site Engineer / Receiving Staging ramp" />
+            </div>
           </div>
 
           <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
@@ -192,7 +220,7 @@
             <div class="flex items-center gap-2">
               <button type="button" @click="showDeliveryModal = false" class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-md">Cancel</button>
               <button type="submit" class="px-4 py-2 bg-brand-700 text-white font-bold rounded-md hover:bg-brand-800 shadow-sm">
-                Generate DR & SOA
+                {{ savingDelivery ? 'Saving...' : 'Generate DR & SOA' }}
               </button>
             </div>
           </div>
@@ -206,7 +234,7 @@
     <div v-if="showCreatePoModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 text-xs space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200">
-          <h3 class="text-sm font-bold text-slate-900">Create New Customer Purchase Order</h3>
+          <h3 class="text-sm font-bold text-slate-900">Record Customer Purchase Order</h3>
           <button @click="showCreatePoModal = false" class="text-slate-400 hover:text-slate-700">
             <X class="w-4 h-4" />
           </button>
@@ -222,7 +250,7 @@
               </select>
             </div>
             <div>
-              <label class="block font-medium text-slate-700 mb-1">PO Reference Number *</label>
+              <label class="block font-medium text-slate-700 mb-1">Customer PO Number *</label>
               <input v-model="newPo.poNumber" required class="w-full px-3 py-2 border rounded-md border-slate-300 font-mono" placeholder="PO-CLI-2026-..." />
             </div>
           </div>
@@ -263,9 +291,69 @@
 
           <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
             <button type="button" @click="showCreatePoModal = false" class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-md">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-slate-900 text-white font-semibold rounded-md hover:bg-slate-800">Save Purchase Order</button>
+            <button type="submit" class="px-4 py-2 bg-slate-900 text-white font-semibold rounded-md hover:bg-slate-800">Save Customer PO</button>
           </div>
         </form>
+      </div>
+    </div>
+    </Teleport>
+
+    <!-- Setup Required Modal -->
+    <Teleport to="body">
+    <div v-if="showSetupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-6 text-xs space-y-4">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+              <AlertTriangle class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Customer & Product Required</h3>
+              <p class="text-slate-500 mt-0.5">To record a customer purchase order, you must have at least one registered customer and one catalog product.</p>
+            </div>
+          </div>
+          <button @click="showSetupModal = false" class="text-slate-400 hover:text-slate-700">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div class="p-3 bg-slate-50 rounded-lg space-y-2 border border-slate-100">
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-slate-700">Registered Customers:</span>
+            <span :class="salesStore.customers.length > 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold font-mono'">
+              {{ salesStore.customers.length }} found
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-slate-700">Catalog Products:</span>
+            <span :class="salesStore.products.length > 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold font-mono'">
+              {{ salesStore.products.length }} found
+            </span>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <router-link
+            v-if="salesStore.customers.length === 0"
+            to="/customers"
+            class="px-3.5 py-2 bg-brand-700 text-white font-semibold rounded-lg hover:bg-brand-800"
+          >
+            Go to Customers
+          </router-link>
+          <router-link
+            v-if="salesStore.products.length === 0"
+            to="/products"
+            class="px-3.5 py-2 bg-brand-700 text-white font-semibold rounded-lg hover:bg-brand-800"
+          >
+            Go to Products
+          </router-link>
+          <button
+            @click="showSetupModal = false"
+            class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
     </Teleport>
@@ -274,13 +362,30 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Plus, PackageCheck, X } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { useBillingStore } from '@/stores/billingStore'
+import { trackOrder } from '@/lib/orderTracking'
+import OrderHistory from '@/components/common/OrderHistory.vue'
+import { Plus, PackageCheck, X, AlertTriangle } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { useSalesStore } from '@/stores/salesStore'
 import { useDeliveryStore } from '@/stores/deliveryStore'
 
 const salesStore = useSalesStore()
 const deliveryStore = useDeliveryStore()
+const savingDelivery = ref(false)
+const deliveryError = ref('')
+const billingStore = useBillingStore()
+const route = useRoute()
+const router = useRouter()
+const search = ref('')
+const filter = ref('all')
+const orders = computed(() => salesStore.enrichedPurchaseOrders.map(po => trackOrder(po, deliveryStore.deliveryReceipts, billingStore.enrichedStatements, billingStore.payments, deliveryStore.deliveryIssues)))
+const filteredOrders = computed(() => orders.value.filter(po => {
+  const matchesSearch = [po.poNumber, po.customerName, po.project].some(value => String(value || '').toLowerCase().includes(search.value.toLowerCase()))
+  const matchesFilter = filter.value === 'all' || (filter.value === 'delivery' && po.totalRemaining > 0) || (filter.value === 'unpaid' && po.balance > 0) || (filter.value === 'replacement' && po.openIssues.length > 0)
+  return matchesSearch && matchesFilter && (!route.query.po || route.query.po === po.id)
+}))
 
 // Delivery Modal State
 const showDeliveryModal = ref(false)
@@ -289,6 +394,7 @@ const deliveryForm = ref({
   date: new Date().toISOString().split('T')[0],
   deliveredBy: '',
   receivedBy: '',
+  tripId: null,
   items: []
 })
 
@@ -298,6 +404,7 @@ function openDeliveryModal(po) {
     date: new Date().toISOString().split('T')[0],
     deliveredBy: '',
     receivedBy: '',
+    tripId: null,
     items: po.items.map(item => ({
       productId: item.productId,
       name: item.productName,
@@ -316,8 +423,8 @@ const calculatedDeliveryValue = computed(() => {
   return deliveryForm.value.items.reduce((sum, i) => sum + ((Number(i.quantity) || 0) * (Number(i.unitPrice) || 0)), 0)
 })
 
-function handleCreateDelivery() {
-  if (!selectedPo.value) return
+async function handleCreateDelivery() {
+  if (!selectedPo.value || savingDelivery.value) return
 
   // Filter items with quantity > 0
   const validItems = deliveryForm.value.items.filter(i => Number(i.quantity) > 0 && Number(i.quantity) <= i.remainingQty)
@@ -326,7 +433,11 @@ function handleCreateDelivery() {
     return
   }
 
-  deliveryStore.createDelivery({
+  if (savingDelivery.value) return
+  savingDelivery.value = true
+  deliveryError.value = ''
+  try {
+  await deliveryStore.createDelivery({
     date: deliveryForm.value.date,
     poId: selectedPo.value.id,
     poNumber: selectedPo.value.poNumber,
@@ -335,16 +446,20 @@ function handleCreateDelivery() {
     customerName: selectedPo.value.customerName,
     project: selectedPo.value.project,
     paymentTerms: selectedPo.value.paymentTerms,
+    tripId: deliveryForm.value.tripId,
     deliveredBy: deliveryForm.value.deliveredBy,
     receivedBy: deliveryForm.value.receivedBy,
     items: validItems
   })
 
   showDeliveryModal.value = false
+  } catch (error) { deliveryError.value = error.message }
+  finally { savingDelivery.value = false }
 }
 
 // Create PO Modal State
 const showCreatePoModal = ref(false)
+const showSetupModal = ref(false)
 const canCreatePo = computed(() => salesStore.customers.length > 0 && salesStore.products.length > 0)
 const newPo = ref({
   customerId: '',
@@ -367,7 +482,10 @@ function onCustomerSelect() {
 }
 
 function openCreatePoModal() {
-  if (!canCreatePo.value) return
+  if (!canCreatePo.value) {
+    showSetupModal.value = true
+    return
+  }
   showCreatePoModal.value = true
 }
 

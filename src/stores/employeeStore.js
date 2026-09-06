@@ -1,58 +1,179 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useExpenseStore } from './expenseStore'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 export const useEmployeeStore = defineStore('employee', () => {
   const employees = ref([])
   const cashAdvances = ref([])
   const payrollRecords = ref([])
+  const isLoading = ref(false)
 
-  const totalOpenAdvances = computed(() => cashAdvances.value.filter(advance => advance.status === 'Open').reduce((total, advance) => total + advance.balance, 0))
+  const totalOpenAdvances = computed(() => cashAdvances.value.filter(advance => advance.status === 'Open').reduce((total, advance) => total + Number(advance.balance || 0), 0))
 
   const employeeAdvancesMap = computed(() => {
     const balances = {}
     cashAdvances.value.forEach(advance => {
-      if (advance.status === 'Open') balances[advance.employeeId] = (balances[advance.employeeId] || 0) + advance.balance
+      if (advance.status === 'Open') balances[advance.employeeId] = (balances[advance.employeeId] || 0) + Number(advance.balance || 0)
     })
     return balances
   })
 
-  function addEmployee(data) {
+  async function fetchAll() {
+    isLoading.value = true
+    try {
+      if (isSupabaseConfigured) {
+        const [empRes, caRes] = await Promise.all([
+          supabase.from('employees').select('*').order('name', { ascending: true }),
+          supabase.from('cash_advances').select('*').order('date', { ascending: false })
+        ])
+
+        if (empRes.data) {
+          employees.value = empRes.data.map(r => ({
+            id: r.id,
+            name: r.name,
+            position: r.position,
+            payType: r.pay_type,
+            rate: Number(r.rate || 0),
+            phone: r.phone,
+            startDate: r.start_date,
+            status: r.status
+          }))
+        }
+
+        if (caRes.data) {
+          cashAdvances.value = caRes.data.map(r => ({
+            id: r.id,
+            employeeId: r.employee_id,
+            employeeName: r.employee_name,
+            date: r.date,
+            amount: Number(r.amount || 0),
+            deductedAmount: Number(r.deducted_amount || 0),
+            balance: Number(r.balance || 0),
+            status: r.status,
+            reason: r.reason
+          }))
+        }
+        return
+      }
+
+      const [empRes, caRes] = await Promise.all([
+        fetch('/api/employees').then(r => r.json()),
+        fetch('/api/cash-advances').then(r => r.json())
+      ])
+      employees.value = empRes || []
+      cashAdvances.value = caRes || []
+    } catch (err) {
+      console.error('Failed to fetch employee data:', err)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Auto-fetch on store initialization
+  fetchAll()
+
+  async function addEmployee(data) {
     const rate = Number(data.rate)
     if (!data.name?.trim() || !data.position?.trim() || !Number.isFinite(rate) || rate < 0) return null
 
-    const employee = {
-      id: `emp-${employees.value.length + 1}`,
+    const payload = {
+      id: `emp-${Date.now()}`,
       name: data.name.trim(),
       position: data.position.trim(),
-      payType: data.payType,
+      payType: data.payType || 'Daily',
       rate,
       phone: data.phone?.trim() || '',
-      startDate: data.startDate,
+      startDate: data.startDate || new Date().toISOString().split('T')[0],
       status: data.status || 'Active'
     }
-    employees.value.unshift(employee)
-    return employee
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('employees').insert({
+          id: payload.id,
+          name: payload.name,
+          position: payload.position,
+          pay_type: payload.payType,
+          rate: payload.rate,
+          phone: payload.phone,
+          start_date: payload.startDate,
+          status: payload.status
+        })
+        if (error) throw error
+        employees.value.push(payload)
+        return payload
+      } catch (e) {
+        console.error('Supabase employee insert failed, falling back:', e)
+      }
+    }
+
+    try {
+      const res = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      const saved = await res.json()
+      employees.value.push(saved)
+      return saved
+    } catch (e) {
+      employees.value.push(payload)
+      return payload
+    }
   }
 
-  function addCashAdvance(data) {
+  async function addCashAdvance(data) {
     const employee = employees.value.find(item => item.id === data.employeeId)
     const amount = Number(data.amount)
     if (!employee || !Number.isFinite(amount) || amount <= 0) return null
 
-    const newAdvance = {
-      id: `ca-${cashAdvances.value.length + 1}`,
+    const payload = {
+      id: `ca-${Date.now()}`,
       employeeId: data.employeeId,
-      employeeName: employee?.name || 'Unknown Employee',
-      date: data.date,
+      employeeName: employee?.name || 'Worker',
+      date: data.date || new Date().toISOString().split('T')[0],
       amount,
       deductedAmount: 0,
       balance: amount,
       status: 'Open',
-      reason: data.reason || 'Cash Advance'
+      reason: data.reason || 'Cash Advance (Vale)'
     }
-    cashAdvances.value.unshift(newAdvance)
-    return newAdvance
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('cash_advances').insert({
+          id: payload.id,
+          employee_id: payload.employeeId,
+          employee_name: payload.employeeName,
+          date: payload.date,
+          amount: payload.amount,
+          deducted_amount: 0,
+          balance: payload.amount,
+          status: 'Open',
+          reason: payload.reason
+        })
+        if (error) throw error
+        cashAdvances.value.unshift(payload)
+        return payload
+      } catch (e) {
+        console.error('Supabase cash advance insert failed, falling back:', e)
+      }
+    }
+
+    try {
+      const res = await fetch('/api/cash-advances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      const saved = await res.json()
+      cashAdvances.value.unshift(saved)
+      return saved
+    } catch (e) {
+      cashAdvances.value.unshift(payload)
+      return payload
+    }
   }
 
   function recordPayroll(payrollData) {
@@ -117,6 +238,8 @@ export const useEmployeeStore = defineStore('employee', () => {
     payrollRecords,
     totalOpenAdvances,
     employeeAdvancesMap,
+    isLoading,
+    fetchAll,
     addEmployee,
     addCashAdvance,
     recordPayroll

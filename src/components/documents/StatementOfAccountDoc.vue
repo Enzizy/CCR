@@ -58,8 +58,8 @@
           <tbody>
             <tr v-for="(item, index) in statement.items || []" :key="index">
               <td class="center">{{ formatShortDate(item.poDate || statement.poDate) }}</td>
-              <td class="center">{{ statement.poNumber || '—' }}</td>
-              <td class="center">{{ deliveryNumber }}</td>
+              <td class="center">{{ item.poNumber || statement.poNumber || '—' }}</td>
+              <td class="center">{{ item.drNumber || deliveryNumber }}</td>
               <td class="center">{{ formatNumber(item.quantity) }}</td>
               <td class="description">{{ item.name || item.productName || '—' }}</td>
               <td class="center">{{ item.unit || 'set' }}</td>
@@ -232,7 +232,7 @@ function lineAmount(item) {
 .soa-ledger tbody td { box-sizing: border-box; height: 4.35mm; padding: 0.45mm 1.2mm; vertical-align: middle; }
 .soa-ledger .center { text-align: center; }
 .soa-ledger .number { padding-right: 1.5mm; text-align: right; }
-.soa-ledger .description { padding-left: 2mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.soa-ledger .description { padding-left: 2mm; white-space: normal; overflow-wrap: anywhere; }
 .soa-ledger .project-name { font-weight: 700; text-align: center; text-transform: uppercase; }
 .soa-ledger .nothing-follows td:nth-child(5) { font-size: 7pt; font-style: italic; font-weight: 700; text-align: center; }
 .soa-ledger tfoot td { height: 6.5mm; }

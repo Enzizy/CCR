@@ -55,7 +55,10 @@ const salesStore = useSalesStore()
 
 const currentReceipt = computed(() => {
   const id = route.params.id
-  return deliveryStore.deliveryReceipts.find(dr => dr.id === id)
+  const receipt = deliveryStore.deliveryReceipts.find(dr => dr.id === id)
+  if (!receipt) return null
+  const po = salesStore.purchaseOrders.find(order => order.id === receipt.poId)
+  return { ...receipt, customerId: receipt.customerId || po?.customerId, poNumber: receipt.poNumber || po?.poNumber, project: receipt.project || po?.project }
 })
 
 const customer = computed(() => {

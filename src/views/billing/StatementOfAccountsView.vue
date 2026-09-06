@@ -7,8 +7,13 @@
       </div>
     </div>
 
+    <p class="text-xs text-slate-500">SOAs bill the items delivered under a customer PO. Record each customer payment against its SOA.</p>
+    <div class="flex flex-wrap gap-3 text-xs">
+      <label class="flex-1">Find an SOA<input v-model="search" type="search" placeholder="SOA, DR, customer PO or customer" class="mt-1 block w-full border border-slate-300 rounded-md px-3 py-2" /></label>
+      <label>Payment status<select v-model="statusFilter" class="mt-1 block border border-slate-300 rounded-md px-3 py-2"><option value="all">All SOAs</option><option value="unpaid">Unpaid / partially paid</option><option value="paid">Paid</option></select></label>
+    </div>
     <!-- SOA Table -->
-    <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
+    <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-x-auto">
       <table class="data-table">
         <thead>
           <tr class="data-table-header">
@@ -26,7 +31,7 @@
         </thead>
         <tbody class="divide-y divide-slate-100 text-slate-700">
           <tr
-            v-for="soa in billingStore.enrichedStatements"
+            v-for="soa in filteredStatements"
             :key="soa.id"
             class="hover:bg-slate-50/50 transition-colors"
           >
@@ -64,12 +69,12 @@
                 class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/70 rounded-md transition-colors shadow-xs"
               >
                 <CreditCard class="w-3.5 h-3.5" />
-                <span>Pay</span>
+                <span>Record payment</span>
               </button>
             </td>
           </tr>
-          <tr v-if="billingStore.enrichedStatements.length === 0">
-            <td colspan="10" class="py-12 text-center text-xs text-slate-500">No statements yet. An SOA is generated automatically from each billable delivery.</td>
+          <tr v-if="filteredStatements.length === 0">
+            <td colspan="10" class="py-12 text-center text-xs text-slate-500">No matching SOAs. Each billable delivery creates an SOA; replacements do not.</td>
           </tr>
         </tbody>
       </table>
@@ -169,7 +174,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useDeliveryStore } from '@/stores/deliveryStore'
+import { statementDetails } from '@/lib/orderTracking'
 import { Printer, CreditCard, X } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import StatementOfAccountDoc from '@/components/documents/StatementOfAccountDoc.vue'
@@ -178,6 +186,16 @@ import { useSalesStore } from '@/stores/salesStore'
 
 const billingStore = useBillingStore()
 const salesStore = useSalesStore()
+const deliveryStore = useDeliveryStore()
+const route = useRoute()
+const search = ref(String(route.query.search || ''))
+const statusFilter = ref('all')
+watch(() => route.query.search, value => { search.value = String(value || '') })
+const detailedStatements = computed(() => billingStore.enrichedStatements.map(soa => statementDetails(soa, deliveryStore.deliveryReceipts, salesStore.purchaseOrders)))
+const filteredStatements = computed(() => detailedStatements.value.filter(soa =>
+  [soa.soaNumber, soa.customerName, soa.poNumber, soa.drNumber].some(value => String(value || '').toLowerCase().includes(search.value.toLowerCase())) &&
+  (statusFilter.value === 'all' || (statusFilter.value === 'unpaid' && soa.balance > 0) || (statusFilter.value === 'paid' && soa.balance <= 0))
+))
 
 const previewingSoa = ref(null)
 const showPaymentModal = ref(false)
@@ -222,8 +240,8 @@ function openPaymentModal(soa) {
   showPaymentModal.value = true
 }
 
-function handleRecordPayment() {
-  const payment = billingStore.recordPayment(paymentForm.value)
+async function handleRecordPayment() {
+  const payment = await billingStore.recordPayment(paymentForm.value)
   if (payment) showPaymentModal.value = false
 }
 </script>
