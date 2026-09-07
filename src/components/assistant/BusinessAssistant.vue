@@ -12,7 +12,7 @@
 
         <div ref="conversation" class="min-h-48 flex-1 space-y-3 overflow-y-auto p-5 text-xs">
           <div v-if="!messages.length" class="space-y-3">
-            <p class="text-slate-600">What do you need help with?</p>
+            <p class="text-slate-600">Recommended questions</p>
             <div class="flex flex-wrap gap-2">
               <button v-for="suggestion in suggestions" :key="suggestion" type="button" class="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-left text-brand-900 hover:bg-brand-100" @click="askSuggestion(suggestion)">{{ suggestion }}</button>
             </div>
@@ -36,18 +36,54 @@
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/authStore'
+import { useSalesStore } from '@/stores/salesStore'
+import { useBillingStore } from '@/stores/billingStore'
+import { useEmployeeStore } from '@/stores/employeeStore'
 
 const open = defineModel('open', { default: false })
 const authStore = useAuthStore()
+const salesStore = useSalesStore()
+const billingStore = useBillingStore()
+const employeeStore = useEmployeeStore()
 const messages = ref([])
 const draft = ref('')
 const loading = ref(false)
 const error = ref('')
 const conversation = ref(null)
-const suggestions = ['How do I record a delivery?', 'What is an SOA?', 'How do I record a customer payment?']
+const openPurchaseOrders = computed(() => salesStore.enrichedPurchaseOrders.filter(po => po.totalRemaining > 0))
+const openAdvances = computed(() => employeeStore.cashAdvances.filter(advance => advance.status === 'Open' && Number(advance.balance) > 0))
+
+const suggestions = [
+  'What needs attention?',
+  'Which customer POs are pending delivery?',
+  'Which customer balances are unpaid?',
+  'Which cash advances are still open?',
+  'How do I record a delivery?',
+  'How do I record a customer payment?'
+]
+
+const businessContext = computed(() => JSON.stringify({
+  pendingPurchaseOrders: openPurchaseOrders.value.slice(0, 20).map(po => ({
+    poNumber: po.poNumber,
+    customer: po.customerName,
+    itemsRemaining: po.totalRemaining
+  })),
+  unpaidStatements: billingStore.enrichedStatements.filter(statement => Number(statement.balance) > 0).slice(0, 20).map(statement => ({
+    soaNumber: statement.soaNumber,
+    customer: statement.customerName,
+    balance: Number(statement.balance || 0),
+    status: statement.status,
+    dueDate: statement.dueDate
+  })),
+  openCashAdvances: openAdvances.value.slice(0, 20).map(advance => ({
+    employee: advance.employeeName,
+    balance: Number(advance.balance || 0),
+    date: advance.date
+  }))
+}))
 
 watch(messages, async () => {
   await nextTick()
@@ -75,7 +111,7 @@ async function send() {
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authStore.getAuthHeaders() },
-      body: JSON.stringify({ messages: messages.value })
+      body: JSON.stringify({ messages: messages.value, businessContext: businessContext.value })
     })
     const payload = await response.json()
     if (!response.ok) throw new Error(payload.error || 'The assistant could not respond.')

@@ -36,6 +36,6 @@ Several business stores still fall back to local/in-memory data after cloud writ
 errors, and payroll runs are not persisted in Supabase. These workflows need
 further work before the entire system can be considered production-ready.
 
-The assistant is for guidance only. It cannot create or edit records, and it does
-not receive business data automatically; it only receives the chat messages entered
-by the signed-in user.
+The assistant is for guidance only and cannot create or edit records. For each chat
+request, it receives a compact current summary of pending customer POs, unpaid
+statements, and open cash advances so it can answer business-status questions.
