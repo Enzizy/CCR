@@ -125,7 +125,15 @@
         </div>
 
         <!-- Right Side Actions -->
-        <div class="flex items-center gap-2.5 shrink-0">
+          <div class="flex items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            class="hidden items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-brand-800 sm:flex"
+            @click="aiOpen = true"
+          >
+            <Sparkles class="h-3.5 w-3.5" />
+            Ask Assistant
+          </button>
           <!-- Quick Action Dropdown -->
           <div class="relative">
             <button
@@ -229,6 +237,7 @@
           <router-view />
         </div>
       </main>
+      <BusinessAssistant v-model:open="aiOpen" />
     </div>
   </div>
 </template>
@@ -254,7 +263,8 @@ import {
   Banknote,
   Search,
   X,
-  Menu
+  Menu,
+  Sparkles
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/authStore'
 import { useSalesStore } from '@/stores/salesStore'
@@ -263,6 +273,7 @@ import { useBillingStore } from '@/stores/billingStore'
 import { useExpenseStore } from '@/stores/expenseStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import SectionTabs from '@/components/common/SectionTabs.vue'
+import BusinessAssistant from '@/components/assistant/BusinessAssistant.vue'
 import ccrLogo from '@/assets/ccr-logo.png'
 
 const route = useRoute()
@@ -277,6 +288,7 @@ const settingsStore = useSettingsStore()
 const mainContent = ref(null)
 watch(() => route.fullPath, async () => { await nextTick(); mainContent.value?.scrollTo({ top: 0 }) })
 const mobileNavOpen = ref(false)
+const aiOpen = ref(false)
 
 const userDisplayName = computed(() => {
   const name = authStore.user?.fullName

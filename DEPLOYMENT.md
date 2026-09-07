@@ -9,9 +9,10 @@
    Existing local `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` remain supported.
 2. Deploy the updated code using Vite, `npm run build`, output `dist`.
    Missing credentials or private keys stop the build with a readable error.
-3. In Supabase Authentication > Users, create your account with an email and password.
+3. To enable the in-app assistant, add `GEMINI_API_KEY` in Vercel as an encrypted environment variable (Production). Do not use a `VITE_` prefix and do not place this key in a local file committed to Git. Create and restrict the key to the Gemini API in Google AI Studio. The assistant uses `gemini-2.5-flash` by default; set the optional `GEMINI_MODEL` variable only if you need to use a different available Gemini model.
+4. In Supabase Authentication > Users, create your account with an email and password.
    The old local SQLite account is not a Supabase user.
-4. Approve that specific account in the Supabase SQL Editor, replacing the email:
+5. Approve that specific account in the Supabase SQL Editor, replacing the email:
 
    ```sql
    update auth.users
@@ -22,7 +23,7 @@
    Confirm exactly one row was updated. Sign out and sign back in after changing approval.
    Approval belongs in app metadata, never user metadata. Unapproved accounts and
    anonymous visitors have no access to business tables.
-5. Log in using your full email and password. Verify a record can be saved and
+6. Log in using your full email and password. Verify a record can be saved and
    still appears after reloading before using the site for business transactions.
 
 The live project access policy was hardened during this fix. For a different
@@ -34,3 +35,7 @@ existing project, apply `supabase/secure-access.sql`; for a new project use
 Several business stores still fall back to local/in-memory data after cloud write
 errors, and payroll runs are not persisted in Supabase. These workflows need
 further work before the entire system can be considered production-ready.
+
+The assistant is for guidance only. It cannot create or edit records, and it does
+not receive business data automatically; it only receives the chat messages entered
+by the signed-in user.
