@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="page-title">Delivery Trips & Manifest</h2>
-        <p class="text-xs text-slate-500 mt-0.5">Plan truck dispatch runs, bundle multiple customer drop-offs, and automatically track vehicle fuel expenses.</p>
+        <h2 class="page-title">Delivery Trips</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Plan truck runs, group customer deliveries, and record trip expenses.</p>
       </div>
 
       <button
@@ -54,7 +54,7 @@
             </div>
             <div class="border-l border-slate-200 pl-4">
               <span class="text-[10px] text-emerald-700 font-medium block flex items-center gap-1">
-                <CheckCircle2 class="w-3 h-3" /> Auto-Expensed
+                <CheckCircle2 class="w-3 h-3" /> Added to Expenses
               </span>
               <span class="text-[10px] text-slate-400">In Central Expenses</span>
             </div>
@@ -64,7 +64,7 @@
         <!-- Manifest: DRs on this truck -->
         <div class="p-6">
           <div class="text-xs font-medium text-slate-500 mb-3">
-            Trip Delivery Manifest ({{ trip.drNumbers.length }} Client Deliveries)
+            Deliveries on this trip ({{ trip.drNumbers.length }})
           </div>
           <div v-if="trip.drNumbers.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div

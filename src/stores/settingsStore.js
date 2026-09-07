@@ -31,17 +31,15 @@ export const useSettingsStore = defineStore('settings', () => {
   fetchSettings()
 
   async function updateCompany(details) {
-    company.value = { ...company.value, ...details }
+    const nextCompany = { ...company.value, ...details }
     if (isSupabaseConfigured) {
-      try {
-        await supabase.from('settings').upsert({
-          key: 'company_profile',
-          value: company.value
-        })
-      } catch (e) {
-        console.warn('Failed to save company profile to Supabase:', e)
-      }
+      const { error } = await supabase.from('settings').upsert({
+        key: 'company_profile',
+        value: nextCompany
+      })
+      if (error) throw error
     }
+    company.value = nextCompany
   }
 
   return { company, updateCompany, fetchSettings }

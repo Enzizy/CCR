@@ -20,7 +20,7 @@
       <!-- Delivered Revenue -->
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-slate-500">Delivered Revenue</span>
+          <span class="text-xs font-medium text-slate-500">Delivered Sales</span>
           <span class="p-1.5 rounded-lg bg-blue-50 text-blue-600">
             <Truck class="w-4 h-4" />
           </span>
@@ -28,7 +28,7 @@
         <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-slate-900">
           {{ formatCurrency(totalRevenue) }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Total goods delivered</p>
+        <p class="text-[11px] text-slate-400 mt-1">All delivered goods</p>
       </div>
 
       <!-- Collections -->
@@ -42,7 +42,7 @@
         <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-emerald-600">
           {{ formatCurrency(billingStore.totalCollections) }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">{{ collectionRate }}% collected</p>
+        <p class="text-[11px] text-slate-400 mt-1">All payments received · {{ collectionRate }}% of delivered sales</p>
       </div>
 
       <!-- Accounts Receivable -->
@@ -65,7 +65,7 @@
         >
           {{ formatCurrency(billingStore.totalReceivables) }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Unpaid customer balance</p>
+        <p class="text-[11px] text-slate-400 mt-1">All unpaid customer balances</p>
       </div>
 
       <!-- Business Expenses -->
@@ -79,7 +79,7 @@
         <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-slate-900">
           {{ formatCurrency(expenseStore.totalExpenses) }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Total operating costs</p>
+        <p class="text-[11px] text-slate-400 mt-1">All recorded business expenses</p>
       </div>
 
       <!-- Estimated Operating Net -->
@@ -88,7 +88,7 @@
         :class="estimatedProfit >= 0 ? 'border-brand-200/80 bg-brand-50/20' : 'border-rose-200/80 bg-rose-50/20'"
       >
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium" :class="estimatedProfit >= 0 ? 'text-brand-900' : 'text-rose-900'">Estimated Net</span>
+          <span class="text-xs font-medium" :class="estimatedProfit >= 0 ? 'text-brand-900' : 'text-rose-900'">Sales Less Expenses</span>
           <span
             class="p-1.5 rounded-lg"
             :class="estimatedProfit >= 0 ? 'bg-brand-100 text-brand-700' : 'bg-rose-100 text-rose-700'"
@@ -102,7 +102,7 @@
         >
           {{ formatCurrency(estimatedProfit) }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Revenue minus expenses</p>
+        <p class="text-[11px] text-slate-400 mt-1">Estimate only — not available cash</p>
       </div>
     </div>
 

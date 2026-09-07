@@ -20,7 +20,7 @@
       <!-- Cash In -->
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-slate-500">Cash In (Collections)</span>
+          <span class="text-xs font-medium text-slate-500">Payments Received</span>
           <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
             <ArrowDownLeft class="w-4 h-4" />
           </span>
@@ -28,13 +28,13 @@
         <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-emerald-600">
           ₱{{ periodCollections.toLocaleString() }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Payments collected this month</p>
+        <p class="text-[11px] text-slate-400 mt-1">Customer payments recorded this month</p>
       </div>
 
       <!-- Cash Out -->
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-slate-500">Cash Out (Expenses)</span>
+          <span class="text-xs font-medium text-slate-500">Recorded Expenses</span>
           <span class="p-1.5 rounded-lg bg-rose-50 text-rose-600">
             <ArrowUpRight class="w-4 h-4" />
           </span>
@@ -42,13 +42,13 @@
         <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-slate-900">
           ₱{{ periodExpenses.toLocaleString() }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Total operating expenses spent</p>
+        <p class="text-[11px] text-slate-400 mt-1">Business expenses recorded this month</p>
       </div>
 
       <!-- Net Cash -->
       <div class="bg-white p-5 rounded-xl border shadow-xs" :class="netCash >= 0 ? 'border-brand-200/80 bg-brand-50/20' : 'border-rose-200/80 bg-rose-50/20'">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium" :class="netCash >= 0 ? 'text-brand-900' : 'text-rose-900'">Net Cash Generated</span>
+          <span class="text-xs font-medium" :class="netCash >= 0 ? 'text-brand-900' : 'text-rose-900'">Payments Less Expenses</span>
           <span class="p-1.5 rounded-lg" :class="netCash >= 0 ? 'bg-brand-100 text-brand-700' : 'bg-rose-100 text-rose-700'">
             <Wallet class="w-4 h-4" />
           </span>
@@ -56,13 +56,13 @@
         <div class="mt-2 text-2xl font-bold font-mono tracking-tight" :class="netCash >= 0 ? 'text-brand-900' : 'text-rose-700'">
           ₱{{ netCash.toLocaleString() }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Cash In minus Cash Out</p>
+        <p class="text-[11px] text-slate-400 mt-1">Recorded payments minus recorded expenses</p>
       </div>
 
       <!-- Delivered Sales -->
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-slate-500">Delivered Orders</span>
+          <span class="text-xs font-medium text-slate-500">Delivered Sales</span>
           <span class="p-1.5 rounded-lg bg-blue-50 text-blue-600">
             <Truck class="w-4 h-4" />
           </span>
@@ -70,14 +70,12 @@
         <div class="mt-2 text-2xl font-bold font-mono tracking-tight text-slate-900">
           ₱{{ periodRevenue.toLocaleString() }}
         </div>
-        <p class="text-[11px] text-slate-400 mt-1">Total goods delivered to clients</p>
+        <p class="text-[11px] text-slate-400 mt-1">Total value delivered to customers</p>
       </div>
     </div>
 
-    <!-- Details Section: Expense Breakdown + Cash Summary -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Expense Breakdown (Takes 2 cols) -->
-      <div class="lg:col-span-2 bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
+    <!-- Expense Breakdown -->
+    <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 class="text-sm font-semibold text-slate-900">Where Money Went (Expenses)</h3>
@@ -152,7 +150,6 @@
           </p>
         </div>
       </div>
-    </div>
   </div>
 </template>
 

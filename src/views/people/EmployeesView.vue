@@ -37,6 +37,7 @@
           <span>{{ employee.phone || 'No phone recorded' }}</span>
           <span>Since {{ formatDate(employee.startDate) }}</span>
         </div>
+        <button type="button" class="mt-4 text-xs font-semibold text-brand-800 hover:text-brand-950" @click="openEditModal(employee)">Edit employee</button>
       </article>
     </div>
 
@@ -51,11 +52,12 @@
       <div v-if="showAddModal" class="modal-backdrop" role="presentation">
         <div class="modal-panel max-w-lg" role="dialog" aria-modal="true" aria-labelledby="add-employee-title">
           <div class="modal-header">
-            <h3 id="add-employee-title">Add Employee or Worker</h3>
+            <h3 id="add-employee-title">{{ editingEmployeeId ? 'Edit Employee' : 'Add Employee' }}</h3>
             <button type="button" class="icon-button" aria-label="Close" @click="closeModal"><X class="h-4 w-4" /></button>
           </div>
 
           <form class="space-y-4 p-6 text-xs" @submit.prevent="handleAddEmployee">
+            <p v-if="saveError" role="alert" class="rounded-md bg-rose-50 px-3 py-2 text-rose-700">{{ saveError }}</p>
             <div>
               <label class="form-label" for="employee-name">Full name *</label>
               <input id="employee-name" v-model.trim="newEmployee.name" class="form-control" required autocomplete="name">
@@ -103,7 +105,7 @@
 
             <div class="modal-actions">
               <button type="button" class="secondary-button" @click="closeModal">Cancel</button>
-              <button type="submit" class="primary-button">Save Employee</button>
+              <button type="submit" class="primary-button" :disabled="saving">{{ saving ? 'Saving…' : editingEmployeeId ? 'Save Changes' : 'Save Employee' }}</button>
             </div>
           </form>
         </div>
@@ -120,6 +122,9 @@ import { useEmployeeStore } from '@/stores/employeeStore'
 
 const employeeStore = useEmployeeStore()
 const showAddModal = ref(false)
+const editingEmployeeId = ref(null)
+const saving = ref(false)
+const saveError = ref('')
 
 function createEmptyEmployee() {
   return {
@@ -154,11 +159,32 @@ function formatDate(value) {
 
 function closeModal() {
   showAddModal.value = false
+  editingEmployeeId.value = null
+  saveError.value = ''
   newEmployee.value = createEmptyEmployee()
 }
 
-function handleAddEmployee() {
-  employeeStore.addEmployee(newEmployee.value)
-  closeModal()
+function openEditModal(employee) {
+  editingEmployeeId.value = employee.id
+  newEmployee.value = { ...employee }
+  showAddModal.value = true
+}
+
+async function handleAddEmployee() {
+  if (saving.value) return
+  saving.value = true
+  saveError.value = ''
+  try {
+    if (editingEmployeeId.value) {
+      await employeeStore.updateEmployee(editingEmployeeId.value, newEmployee.value)
+    } else {
+      await employeeStore.addEmployee(newEmployee.value)
+    }
+    closeModal()
+  } catch (error) {
+    saveError.value = 'Could not save employee changes. Please try again.'
+  } finally {
+    saving.value = false
+  }
 }
 </script>

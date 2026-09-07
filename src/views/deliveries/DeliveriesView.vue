@@ -8,20 +8,12 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <router-link
-          to="/purchase-orders"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-xs transition-colors"
-        >
-          <FileText class="w-3.5 h-3.5 text-brand-700" />
-          <span>Deliver from customer PO</span>
-        </router-link>
-
         <button
           @click="openNewDeliveryModal"
           class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-brand-700 hover:bg-brand-800 rounded-lg shadow-xs transition-colors"
         >
           <Plus class="w-4 h-4" />
-          <span>New Delivery</span>
+          <span>Record Delivery</span>
         </button>
       </div>
     </div>
@@ -247,7 +239,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { FileText, Printer, Plus, X, PackageX } from 'lucide-vue-next'
+import { Printer, Plus, X, PackageX } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { useDeliveryStore } from '@/stores/deliveryStore'
 import { useSalesStore } from '@/stores/salesStore'

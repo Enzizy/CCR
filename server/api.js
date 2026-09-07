@@ -594,6 +594,26 @@ apiRouter.post('/employees', (req, res) => {
   res.status(201).json({ id, ...data })
 })
 
+apiRouter.put('/employees/:id', (req, res) => {
+  const data = req.body || {}
+  const result = db.prepare(`
+    UPDATE employees
+    SET name = ?, position = ?, pay_type = ?, rate = ?, phone = ?, start_date = ?, status = ?
+    WHERE id = ?
+  `).run(
+    data.name,
+    data.position,
+    data.payType || 'Daily',
+    Number(data.rate || 0),
+    data.phone || '',
+    data.startDate || new Date().toISOString().split('T')[0],
+    data.status || 'Active',
+    req.params.id
+  )
+  if (!result.changes) return res.status(404).json({ error: 'Employee not found.' })
+  return res.json({ id: req.params.id, ...data })
+})
+
 apiRouter.get('/cash-advances', (req, res) => {
   const rows = getAll('cash_advances', 'rowid DESC')
   res.json(rows.map(r => ({

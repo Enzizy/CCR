@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="page-title">Collections & Official Payments Received</h2>
-        <p class="text-xs text-slate-500 mt-0.5">Track verified customer remittances, check payments, and bank deposit acknowledgments.</p>
+        <h2 class="page-title">Payments Received</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Record customer payments against their statements of account.</p>
       </div>
 
       <div class="flex items-center gap-3">
@@ -24,7 +24,7 @@
     </div>
 
     <!-- Payments Table -->
-    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
       <table class="data-table">
         <thead>
           <tr class="data-table-header">

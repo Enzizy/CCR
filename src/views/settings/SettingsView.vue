@@ -3,19 +3,22 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="page-title">System Configuration & Document Numbering</h2>
+        <h2 class="page-title">Company & Document Settings</h2>
       </div>
       <button
         @click="handleSave"
+        :disabled="saving"
         class="primary-button"
       >
         {{ saved ? '✓ Settings Saved' : 'Save Changes' }}
       </button>
     </div>
 
+    <p v-if="saveError" role="alert" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{{ saveError }}</p>
+
     <!-- Company Information -->
     <div class="section-card p-6 space-y-4 text-xs">
-      <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Company Legal Profile</h3>
+      <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Company Details</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -51,7 +54,7 @@
 
     <!-- Document Sequencing -->
     <div class="section-card p-6 space-y-4 text-xs">
-      <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Sequential Document Numbering</h3>
+      <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Document Numbers</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
@@ -76,7 +79,7 @@
 
     <!-- Bank Details -->
     <div class="section-card p-6 space-y-4 text-xs">
-      <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Remittance Bank Account (For SOA Printouts)</h3>
+      <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Bank Details for SOA Printouts</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
@@ -107,21 +110,32 @@ const billingStore = useBillingStore()
 const settingsStore = useSettingsStore()
 
 const saved = ref(false)
+const saving = ref(false)
+const saveError = ref('')
 const currentYear = new Date().getFullYear()
 const deliverySequence = ref(deliveryStore.nextDrSeq)
 const soaSequence = ref(billingStore.nextSoaSeq)
 
 const company = ref({ ...settingsStore.company })
 
-function handleSave() {
+async function handleSave() {
+  if (saving.value) return
+  saving.value = true
+  saveError.value = ''
   deliverySequence.value = Math.max(1, Number(deliverySequence.value) || 1)
   soaSequence.value = Math.max(1, Number(soaSequence.value) || 1)
-  deliveryStore.nextDrSeq = deliverySequence.value
-  billingStore.nextSoaSeq = soaSequence.value
-  settingsStore.updateCompany(company.value)
-  saved.value = true
-  window.setTimeout(() => {
-    saved.value = false
-  }, 2000)
+  try {
+    await settingsStore.updateCompany(company.value)
+    deliveryStore.nextDrSeq = deliverySequence.value
+    billingStore.nextSoaSeq = soaSequence.value
+    saved.value = true
+    window.setTimeout(() => {
+      saved.value = false
+    }, 2000)
+  } catch (error) {
+    saveError.value = 'Could not save settings. Please try again.'
+  } finally {
+    saving.value = false
+  }
 }
 </script>

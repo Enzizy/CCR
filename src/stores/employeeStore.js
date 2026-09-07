@@ -123,6 +123,48 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
+  async function updateEmployee(id, data) {
+    const employeeIndex = employees.value.findIndex(employee => employee.id === id)
+    if (employeeIndex < 0) return null
+
+    const rate = Number(data.rate)
+    if (!data.name?.trim() || !data.position?.trim() || !Number.isFinite(rate) || rate < 0) return null
+
+    const payload = {
+      ...employees.value[employeeIndex],
+      name: data.name.trim(),
+      position: data.position.trim(),
+      payType: data.payType || 'Daily',
+      rate,
+      phone: data.phone?.trim() || '',
+      startDate: data.startDate || employees.value[employeeIndex].startDate,
+      status: data.status || 'Active'
+    }
+
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('employees').update({
+        name: payload.name,
+        position: payload.position,
+        pay_type: payload.payType,
+        rate: payload.rate,
+        phone: payload.phone,
+        start_date: payload.startDate,
+        status: payload.status
+      }).eq('id', id)
+      if (error) throw error
+    } else {
+      const res = await fetch(`/api/employees/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) throw new Error('Unable to save employee changes.')
+    }
+
+    employees.value.splice(employeeIndex, 1, payload)
+    return payload
+  }
+
   async function addCashAdvance(data) {
     const employee = employees.value.find(item => item.id === data.employeeId)
     const amount = Number(data.amount)
@@ -241,6 +283,7 @@ export const useEmployeeStore = defineStore('employee', () => {
     isLoading,
     fetchAll,
     addEmployee,
+    updateEmployee,
     addCashAdvance,
     recordPayroll
   }

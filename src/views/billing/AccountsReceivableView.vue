@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="page-title">Accounts Receivable (A/R) Aging</h2>
-        <p class="text-xs text-slate-500 mt-0.5">Monitor customer aging balances, overdue statements, and take direct payment actions.</p>
+        <h2 class="page-title">Unpaid Balances</h2>
+        <p class="text-xs text-slate-500 mt-0.5">See what each customer still owes and record payments when received.</p>
       </div>
 
       <div class="text-right text-xs bg-white border border-slate-200/80 px-4 py-2 rounded-xl shadow-xs">
@@ -17,7 +17,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-slate-500">Current (> 7 Days)</span>
+          <span class="text-xs font-medium text-slate-500">Not due yet</span>
           <span class="w-2 h-2 rounded-full bg-slate-400"></span>
         </div>
         <div class="mt-2 text-2xl font-semibold font-mono tracking-tight text-slate-900">
@@ -27,7 +27,7 @@
 
       <div class="bg-white p-5 rounded-xl border border-amber-200/80 shadow-xs">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-amber-700">Due Soon (≤ 7 Days)</span>
+          <span class="text-xs font-medium text-amber-700">Due within 7 days</span>
           <span class="w-2 h-2 rounded-full bg-amber-500"></span>
         </div>
         <div class="mt-2 text-2xl font-semibold font-mono tracking-tight text-amber-800">
@@ -55,7 +55,7 @@
       <div
         v-for="cust in billingStore.customerReceivables"
         :key="cust.customerId"
-        class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden"
+        class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-x-auto"
       >
         <div class="px-6 py-4 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -83,7 +83,7 @@
               <th class="py-2.5 px-4 text-right">Invoiced</th>
               <th class="py-2.5 px-4 text-right">Paid</th>
               <th class="py-2.5 px-4 text-right">Balance</th>
-              <th class="py-2.5 px-4 text-center">Aging Status</th>
+              <th class="py-2.5 px-4 text-center">Payment Status</th>
               <th class="py-2.5 px-6 text-right">Actions</th>
             </tr>
           </thead>
@@ -115,7 +115,7 @@
                   class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/70 rounded-md transition-colors shadow-xs"
                 >
                   <CreditCard class="w-3.5 h-3.5" />
-                  <span>Pay</span>
+                  <span>Record Payment</span>
                 </button>
               </td>
             </tr>
