@@ -203,7 +203,7 @@ ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cash_advances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
--- Allow authenticated users full read/write access (and anon for internal intranet if configured)
+-- Only explicitly approved administrators can access this single-company system.
 DO $$
 DECLARE
     t text;
@@ -217,6 +217,9 @@ BEGIN
                             'payments', 'expenses', 'employees', 'cash_advances', 'settings')
     LOOP
         EXECUTE format('DROP POLICY IF EXISTS "allow_all_for_internal_app" ON %I;', t);
-        EXECUTE format('CREATE POLICY "allow_all_for_internal_app" ON %I FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);', t);
+        EXECUTE format('DROP POLICY IF EXISTS "approved_staff_access" ON public.%I;', t);
+        EXECUTE format('REVOKE ALL ON public.%I FROM anon;', t);
+        EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON public.%I TO authenticated;', t);
+        EXECUTE format('CREATE POLICY "approved_staff_access" ON public.%I FOR ALL TO authenticated USING ((select auth.jwt() -> ''app_metadata'' ->> ''role'') = ''ADMIN'') WITH CHECK ((select auth.jwt() -> ''app_metadata'' ->> ''role'') = ''ADMIN'');', t);
     END LOOP;
 END $$;

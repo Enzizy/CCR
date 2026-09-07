@@ -23,9 +23,8 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
 
-    // Try Supabase Auth first if configured
-    if (isSupabaseConfigured) {
-      try {
+    try {
+      if (isSupabaseConfigured) {
         const email = emailOrUsername.includes('@')
           ? emailOrUsername
           : (emailOrUsername.toLowerCase() === 'admin' ? 'ccrconsupplies@gmail.com' : `${emailOrUsername.toLowerCase()}@gmail.com`)
@@ -33,6 +32,8 @@ export const useAuthStore = defineStore('auth', () => {
           email,
           password
         })
+        if (supaErr) throw supaErr
+        if (!supaAuth?.session) throw new Error('No sign-in session was returned. Please try again.')
 
         if (!supaErr && supaAuth?.user) {
           const rawName = supaAuth.user.user_metadata?.full_name || emailOrUsername
@@ -41,7 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
             id: supaAuth.user.id,
             email: supaAuth.user.email,
             fullName,
-            role: supaAuth.user.app_metadata?.role || supaAuth.user.user_metadata?.role || 'ADMIN'
+            role: supaAuth.user.app_metadata?.role || 'GUEST'
           }
           user.value = authUser
           token.value = supaAuth.session.access_token
@@ -49,18 +50,18 @@ export const useAuthStore = defineStore('auth', () => {
           localStorage.setItem('ccr_token', token.value)
           return authUser
         }
-      } catch (err) {
-        console.warn('Supabase Auth error, attempting local authentication fallback:', err)
       }
-    }
 
-    try {
+      if (!import.meta.env.DEV) throw new Error('Sign-in is not configured. Set the Supabase deployment variables and rebuild.')
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailOrUsername, username: emailOrUsername, password })
       })
 
+      if (!res.headers.get('content-type')?.includes('application/json')) {
+        throw new Error('The local sign-in server is unavailable. Start the development server or configure Supabase.')
+      }
       const data = await res.json()
       if (!res.ok) {
         throw new Error(data.error || 'Failed to login')
@@ -89,7 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      if (token.value) {
+      if (!isSupabaseConfigured && import.meta.env.DEV && token.value) {
         await fetch('/api/auth/logout', {
           method: 'POST',
           headers: {
